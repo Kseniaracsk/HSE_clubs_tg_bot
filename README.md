@@ -16,3 +16,4 @@ Telegram-бот и Telegram Mini App для поиска, просмотра и 
 ссылка на фигму https://www.figma.com/design/huEO7tfSQXbG3pfERJaWGX/HSE-clubs?node-id=0-1&t=QrLpQ9hOzn1XtIEa-1
 ссылка на Гугл диск (хранение фото) https://drive.google.com/drive/folders/1LYT-v9tJGce19LVxDDGTJ58geuhwUQvL?usp=drive_link
 ссылка на ТЗ и структуру: https://docs.google.com/document/d/1-WR6WBJDGl84Zy6S_EmGGv1OUMLIeexQMI2OILY2Fzc/edit?usp=sharing
+ссылка на таблицу с данными о клубах:  https://docs.google.com/spreadsheets/d/16K762OspF3BKStTofLK5zt9F25xMYsbKJB7nHEDTll0/edit?usp=sharing
