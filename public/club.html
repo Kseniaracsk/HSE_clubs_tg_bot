@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>Клуб — HSE clubs NN</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/style.css?v=hse-full-update-20261013">
+</head>
+<body>
+  <div id="app" style="padding-bottom:90px">
+    <div class="club-hero">
+      <div id="club-hero-art" class="club-hero-art" aria-hidden="true"></div>
+      <a class="back-btn" href="catalog.html" aria-label="Назад" style="position:absolute;top:14px;left:14px;z-index:3"><span class="back-ico"></span></a>
+      <span id="hero-star"></span>
+      <div class="dots" id="club-dots"><i class="on"></i></div>
+    </div>
+    <div class="club-body" id="club-body">
+      <div class="loading-card">Загружаем карточку клуба…</div>
+    </div>
+    <div class="pin-bottom">
+      <button class="btn btn-blue" id="sub-events-btn">Подписаться на события</button>
+    </div>
+  </div>
+
+  <script src="js/common.js?v=hse-full-update-20261013"></script>
+  <script>
+    document.querySelector('.back-ico').innerHTML = I.back;
+    const clubId = Number(new URLSearchParams(location.search).get('id'));
+    let club = null;
+    let clubEvents = [];
+
+    function externalUrl(value) {
+      const raw = String(value || '').trim();
+      if (/^https?:\/\//i.test(raw)) return raw;
+      if (/^(t\.me|telegram\.me)\//i.test(raw)) return 'https://' + raw;
+      return '';
+    }
+
+    function formatDate(value) {
+      if (!value) return 'Дата уточняется';
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+
+    function renderClubEvents() {
+      const box = document.getElementById('club-events-list');
+      if (!box) return;
+      if (!clubEvents.length) {
+        box.innerHTML = '<div class="empty-state">У клуба пока нет опубликованных событий.</div>';
+        return;
+      }
+      box.innerHTML = clubEvents.map(event => {
+        const date = new Date(event.datetime);
+        const day = Number.isNaN(date.getTime()) ? 'Дата уточняется' : date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+        const time = Number.isNaN(date.getTime()) ? '' : date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+        return `<a class="club-event-row" href="event.html?id=${event.id}">
+          <span class="club-event-date"><b>${esc(day)}</b><small>${esc(time)}</small></span>
+          <span class="club-event-info"><b>${esc(event.title || 'Событие')}</b><small>${esc(event.type || 'Мероприятие')} · ${esc(event.place || 'Место уточняется')}</small></span>
+          <span class="chev">${I.chev}</span>
+        </a>`;
+      }).join('');
+    }
+
+    function renderPage() {
+      if (!club) return;
+      const categoryId = Math.min(6, Math.max(1, Number(club.categoryId) || 1));
+      const categorySymbols = { 1: '📣', 2: '🎨', 3: '🌍', 4: '⚽', 5: '💡', 6: '📢' };
+      const images = Array.isArray(club.images) ? club.images.filter(src => typeof src === 'string' && src.trim()) : [];
+      const photo = images[0] || '';
+      document.getElementById('club-hero-art').innerHTML = photo
+        ? `<img class="cover-photo" src="${esc(photo)}" alt="Обложка клуба">`
+        : `<div class="cover-art detail-cover-art theme-${categoryId}"><span class="cover-kicker">HSE CLUBS NN</span><span class="cover-symbol">${categorySymbols[categoryId] || '★'}</span><span class="cover-caption">${esc(club.name || 'Студенческий клуб')}</span></div>`;
+      document.getElementById('club-dots').innerHTML = (images.length > 1 ? images : [null]).map((_, i) => `<i class="${i === 0 ? 'on' : ''}"></i>`).join('');
+      document.getElementById('hero-star').innerHTML = starBtn(club.id);
+
+      const description = [club.history, club.description || club.short].map(value => String(value || '').trim()).filter(Boolean).filter((value, index, all) => all.indexOf(value) === index).join('\n\n') || 'Подробное описание клуба пока не добавлено в базу данных.';
+      const shortDescription = description.length > 260 ? description.slice(0, 260).trimEnd() + '…' : description;
+      const chairman = club.chairman || {};
+      const channelUrl = externalUrl(club.channel);
+      const contactUrl = externalUrl(club.contacts);
+      const howToJoin = Array.isArray(club.howToJoin) ? club.howToJoin : [];
+      const schedule = Array.isArray(club.schedule) ? club.schedule : [];
+      const additionalInfo = [
+        ['Направления деятельности', club.directions],
+        ['Для кого клуб', club.targetAudience],
+        ['Требуемый опыт', club.experienceRequired],
+        ['Статус набора', club.recruitmentStatus]
+      ].filter(item => String(item[1] || '').trim());
+      const materials = (Array.isArray(club.photoResources) ? club.photoResources : []).filter(item => item && externalUrl(item.url));
+      const externalLinks = [
+        ['Telegram-чат', club.telegramChatUrl], ['Сообщество ВКонтакте', club.vkGroupUrl],
+        ['Сайт клуба', club.websiteUrl]
+      ].filter(item => externalUrl(item[1]) && item[1] !== club.channel);
+
+      document.getElementById('club-body').innerHTML = `
+        <span class="chip-gray">${esc(club.categoryName || 'Категория не указана')}</span>
+        <h1>${esc(club.name || 'Студенческий клуб')}</h1>
+        <div class="slogan">${esc(club.short || '')}</div>
+
+        <div class="club-btns">
+          ${channelUrl ? `<a class="btn btn-blue" href="${esc(channelUrl)}" target="_blank" rel="noopener">Канал клуба</a>` : `<a class="btn btn-blue" href="#club-contact-info">Канал клуба</a>`}
+          ${contactUrl ? `<a class="btn btn-outline" href="${esc(contactUrl)}" target="_blank" rel="noopener">Контакты</a>` : `<a class="btn btn-outline" href="#club-contact-info">Контакты</a>`}
+        </div>
+        ${chairman.name ? `<div class="chairman-note">Председатель: ${esc(chairman.name)}</div>` : ''}
+
+        <section class="detail-section">
+          <div class="section-label">История и описание</div>
+          <div class="history-text" id="club-description-short">${esc(shortDescription)}</div>
+          ${description.length > 260 ? `<div class="history-text" id="club-description-full" hidden>${esc(description)}</div><div class="about-more-row"><button class="link-caps read-more" id="club-description-toggle" type="button" aria-expanded="false">Читать далее ›</button></div>` : ''}
+        </section>
+        ${additionalInfo.length ? `<section class="detail-section"><div class="section-label">О клубе</div>${additionalInfo.map(([label, value]) => `<div class="club-db-info"><b>${esc(label)}</b><p>${esc(value)}</p></div>`).join('')}</section>` : ''}
+        ${materials.length ? `<section class="detail-section"><div class="section-label">Фотографии и материалы</div><div class="club-material-links">${materials.map(item => `<a class="club-material-link" href="${esc(externalUrl(item.url))}" target="_blank" rel="noopener"><span>${I.share}</span><span>${esc(item.caption || 'Открыть материалы клуба')}</span><span class="chev">${I.chev}</span></a>`).join('')}</div></section>` : ''}
+        ${externalLinks.length ? `<section class="detail-section"><div class="section-label">Другие ресурсы</div><div class="club-social-links">${externalLinks.map(([label, url]) => `<a class="btn btn-outline" href="${esc(externalUrl(url))}" target="_blank" rel="noopener">${esc(label)}</a>`).join('')}</div></section>` : ''}
+
+        <section class="join-card">
+          <div class="jtitle">Как вступить?</div>
+          ${howToJoin.length ? howToJoin.map(step => `<div class="step">${I.check}<span>${esc(step)}</span></div>`).join('') : '<div class="step">Уточните условия вступления у представителей клуба.</div>'}
+          ${club.formUrl && externalUrl(club.formUrl) ? `<a class="btn btn-orange" href="${esc(externalUrl(club.formUrl))}" target="_blank" rel="noopener">Заполнить форму</a>` : ''}
+        </section>
+
+        <section class="detail-section">
+          <div class="section-head"><div class="section-label">Ближайшие события</div><a class="link-orange" href="events.html">Все</a></div>
+          <div id="club-events-list"></div>
+        </section>
+
+        <section class="detail-section">
+          <div class="section-label">Расписание клуба</div>
+          <div class="sched-card">${schedule.length ? schedule.map(item => `
+            <div class="sched-row"><span class="k">Дата:</span><span class="v">${esc(item.date || 'Уточняется')}</span><span class="v">${esc(item.time || '')}</span></div>
+            <div class="sched-row"><span class="k">Место:</span><span class="v dark">${esc(item.place || 'Уточняется')}</span></div>`).join('') : club.scheduleText ? `<div class="sched-row schedule-free-text">${esc(club.scheduleText)}</div>` : '<div class="sched-row">Расписание уточняется у организаторов.</div>'}</div>
+        </section>
+
+        <section class="detail-section" id="club-contact-info">
+          <div class="section-label">Контакты</div>
+          <div class="chair-card">
+            <img class="ava" src="icons/ava.png" alt="Председатель клуба">
+            <div class="info"><div class="name">${esc(chairman.name || 'Представитель клуба')}</div><div class="sub">${esc(chairman.info || club.contacts || 'Контактная информация уточняется')}</div></div>
+            ${chairman.tg ? `<a class="tg-round" href="https://t.me/${esc(String(chairman.tg).replace(/^@/, ''))}" target="_blank" rel="noopener" aria-label="Написать в Telegram">${I.tg}</a>` : ''}
+          </div>
+          <div class="contact-text">${esc(club.contacts || 'Контакты клуба уточняются.')}</div>
+        </section>
+
+        <div class="club-footer-links">
+          <button class="link-caps" id="share-club" style="color:var(--muted);display:flex;align-items:center;gap:6px">${I.share} ПОДЕЛИТЬСЯ КЛУБОМ</button>
+          <a class="link-caps" href="submit.html?type=feedback" style="color:var(--orange);display:flex;align-items:center;gap:6px">${I.warn} СООБЩИТЬ ОБ ОШИБКЕ</a>
+        </div>`;
+
+      const subbed = state.clubSubs.includes(club.id);
+      document.getElementById('sub-events-btn').innerHTML = `${I.bell} ${subbed ? 'Вы подписаны на события' : 'Подписаться на события'}`;
+      bindCommon();
+
+      const descToggle = document.getElementById('club-description-toggle');
+      if (descToggle) {
+        descToggle.addEventListener('click', () => {
+          const full = document.getElementById('club-description-full');
+          const short = document.getElementById('club-description-short');
+          const expanded = descToggle.getAttribute('aria-expanded') === 'true';
+          full.hidden = expanded;
+          short.hidden = !expanded;
+          descToggle.setAttribute('aria-expanded', String(!expanded));
+          descToggle.textContent = expanded ? 'Читать далее ›' : 'Свернуть ‹';
+        });
+      }
+      renderClubEvents();
+    }
+
+    document.getElementById('sub-events-btn').addEventListener('click', async () => {
+      try {
+        const res = await api(`/subscriptions/${clubId}/toggle`, { method: 'POST', body: JSON.stringify({}) });
+        if (res.subscribed) {
+          if (!state.clubSubs.includes(clubId)) state.clubSubs.push(clubId);
+        } else state.clubSubs = state.clubSubs.filter(id => id !== clubId);
+        haptic('medium');
+        toast(res.subscribed ? 'Подписка на события оформлена' : 'Подписка отменена');
+        renderPage();
+      } catch (error) { toast(error.message); }
+    });
+
+    document.getElementById('club-body').addEventListener('click', (event) => {
+      const button = event.target.closest('#share-club');
+      if (!button || !club) return;
+      const shareUrl = `https://t.me/share/url?url=${encodeURIComponent(location.origin + '/club.html?id=' + clubId)}&text=${encodeURIComponent('Клуб: ' + club.name)}`;
+      if (tg && tg.openTelegramLink) tg.openTelegramLink(shareUrl);
+      else window.open(shareUrl, '_blank', 'noopener');
+    });
+
+    (async function init() {
+      try {
+        if (!clubId) throw new Error('Не указан клуб');
+        await loadBase();
+        const results = await Promise.all([api('/clubs/' + clubId), api('/events?filter=all')]);
+        club = results[0];
+        clubEvents = results[1].filter(event => Number(event.clubId) === clubId).sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+        document.title = club.name + ' — HSE clubs NN';
+        renderPage();
+      } catch (error) {
+        document.getElementById('club-body').innerHTML = `<div class="empty-state">${esc(error.message || 'Не удалось загрузить карточку клуба')}<br><a class="link-blue" href="catalog.html">Вернуться в каталог</a></div>`;
+      }
+    })();
+  </script>
+</body>
+</html>

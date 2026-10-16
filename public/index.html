@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <!-- чтобы на телефоне нормально смотрелось, без этого всё мелко -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <!-- шрифт Manrope, тянем с гугл-фонтс -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>Главная — HSE clubs NN</title>
+  <!-- официальная библиотека телеграма, без неё мини-ап не мини-ап -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/style.css?v=hse-full-update-20261013">
+</head>
+<!-- data-page нужен чтобы меню снизу подсветило "Главная" оранжевым -->
+<body data-page="home">
+
+  <div id="app">
+    <!-- ===== синяя шапка с приветствием и поиском ===== -->
+    <header class="h-blue">
+      <div class="home-hello">
+        <!-- настоящий логотип вышки из папки icons -->
+        <img class="logo-circle" src="icons/НИУВШЭ.png" alt="Логотип ВШЭ">
+        <div class="title">Привет! Это клубы HSE</div>
+      </div>
+      <div class="search">
+        <input id="home-search" placeholder="Поиск клубов">
+        <span id="search-icon"></span>
+      </div>
+    </header>
+
+    <!-- чипсы категорий, скроллятся вбок если их много -->
+    <div class="chips" id="home-cats"></div>
+
+    <!-- две большие кнопки как в макете -->
+    <div class="home-actions">
+      <a href="catalog.html" class="btn btn-blue" id="all-clubs-btn">
+        <span id="menu-icon"></span> Все клубы
+      </a>
+      <a href="subs.html" class="btn btn-outline" id="my-subs-btn">
+        <!-- тут специально синяя звезда, как в макете -->
+        <span id="star-icon"></span> Мои подписки
+      </a>
+    </div>
+
+    <div class="home-links">
+      <a href="submit.html?type=club" class="link-blue">Предложить клуб</a>
+    </div>
+
+    <!-- ===== несколько клубов из реальной базы ===== -->
+    <div class="section">
+      <div class="section-head">
+        <div class="section-title">Клубы в каталоге</div>
+        <a class="link-orange" href="catalog.html" style="font-size:15px">Все</a>
+      </div>
+      <div id="popular-list"></div>
+    </div>
+
+  </div>
+
+  <!-- ===== меню снизу (одинаковое на всех страницах) ===== -->
+  <nav class="bottom-nav">
+    <button class="nav-item" data-page="home">
+      <span class="nav-icon" data-ico="home"></span>
+      <span class="nav-label">Главная</span>
+    </button>
+    <button class="nav-item" data-page="catalog">
+      <span class="nav-icon" data-ico="lupa"></span>
+      <span class="nav-label">Каталог</span>
+    </button>
+    <button class="nav-item" data-page="events">
+      <span class="nav-icon" data-ico="rupor"></span>
+      <span class="nav-label">События</span>
+    </button>
+    <button class="nav-item" data-page="subs">
+      <span class="nav-icon" data-ico="star"></span>
+      <span class="nav-label">Подписки</span>
+    </button>
+    <button class="nav-item" data-page="profile">
+      <span class="nav-icon" data-ico="profile"></span>
+      <span class="nav-label">Профиль</span>
+    </button>
+  </nav>
+
+  <script src="js/common.js?v=hse-full-update-20261013"></script>
+  <script>
+    // ============ логика главной страницы ============
+
+    // вставляем иконки в кнопки
+    document.getElementById('search-icon').innerHTML = I.search('#fff');
+    document.getElementById('menu-icon').innerHTML = I.menu;
+    // синяя звезда (star_blue.svg из папки icons) для плашки "мои подписки"
+    document.getElementById('star-icon').innerHTML = '<img src="icons/star_blue.svg" alt="" class="btn-ico">';
+
+    // Карточка клуба из SQLite (без выдуманного признака популярности).
+    function miniClubCard(c) {
+      return `
+        <a class="club-mini" href="club.html?id=${c.id}">
+          <div class="logo"></div>
+          <div class="info">
+            <div class="name">${esc(c.name)}</div>
+            <div class="sub">${esc(c.short || 'Краткое описание клуба')}</div>
+            <span class="chip-gray">${esc(c.categoryName)}</span>
+          </div>
+        </a>`;
+    }
+
+    // основная функция: грузим данные и рисуем
+    async function renderPage() {
+      const clubs = await api('/clubs');
+
+      // Показываем все реальные категории, загруженные из SQLite.
+      document.getElementById('home-cats').innerHTML = state.categories.map((c) =>
+        `<a class="chip" href="category.html?id=${c.id}">${esc(c.name)}</a>`
+      ).join('');
+
+      // На главной показываем несколько реальных клубов. Поле популярности отсутствует в БД,
+      // поэтому не выдаём первые карточки за статистически популярные.
+      document.getElementById('popular-list').innerHTML = clubs.slice(0, 6).map(miniClubCard).join('')
+        || '<div class="empty-state">Клубов пока нет в базе данных.</div>';
+    }
+
+    // поиск с главной: перекидывает на каталог и ищет там
+    document.getElementById('home-search').addEventListener('change', () => {
+      const q = document.getElementById('home-search').value.trim();
+      location.href = q ? 'catalog.html?search=' + encodeURIComponent(q) : 'catalog.html';
+    });
+
+    // старт!
+    (async function init() {
+      await loadBase();
+      await renderPage();
+      bindCommon(); // чтобы звёздочки работали
+    })();
+  </script>
+</body>
+</html>

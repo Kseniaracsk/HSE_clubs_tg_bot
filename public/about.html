@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <!-- шрифт Manrope, тянем с гугл-фонтс -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>О проекте — HSE clubs NN</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/style.css?v=sqlite-users-contacts-20261016">
+</head>
+<body>
+
+  <div id="app">
+    <!-- шапка -->
+    <div class="page-header">
+      <a class="back-btn" href="profile.html"><span class="back-ico"></span></a>
+      <div class="title">О проекте</div>
+    </div>
+
+    <!-- большая иконка приложения (логотип из папки icons) -->
+    <div class="about-hero">
+      <img class="app-logo" src="icons/image%201.svg" alt="Логотип ВШЭ" onerror="this.onerror=null;this.src='icons/НИУВШЭ.png';">
+      <div class="name">HSE clubs NN</div>
+    </div>
+
+    <!-- что такое Mini App -->
+    <div class="section">
+      <div class="section-label" style="margin-bottom:8px">О Mini App</div>
+      <div class="plain-text">
+        HSE clubs NN — мини-приложение в Telegram, которое помогает студентам НИУ ВШЭ в Нижнем Новгороде ориентироваться во внеучебной жизни: находить клубы по интересам, узнавать о мероприятиях и знакомиться со студенческими сообществами.
+      </div>
+      <div class="plain-text about-extra" id="miniapp-full" hidden>
+        В каталоге можно изучать клубы и категории, открывать страницы сообществ и переходить к их каналам и формам вступления. В разделе событий можно узнавать о предстоящих мероприятиях, а через пункт «Предложить» — отправить заявку на публикацию события, добавить новый клуб или сообщить об изменениях. Раздел «Мои заявки» помогает отслеживать состояние отправленных предложений.
+        <br><br>
+        Мы хотим, чтобы студентам было проще находить единомышленников, а клубам — рассказывать о себе и приглашать новых участников. Вся важная информация о внеучебной жизни собрана в одном доступном месте прямо внутри Telegram.
+      </div>
+      <div class="about-more-row">
+        <button class="link-caps read-more" type="button" data-target="miniapp-full" aria-expanded="false">Читать далее &rsaquo;</button>
+      </div>
+    </div>
+
+    <!-- цель проекта, цитата в синей рамочке как в макете -->
+    <div class="section">
+      <div class="section-label" style="margin-bottom:10px">Цель проекта</div>
+      <div class="quote-card">«Сделать внеучебную жизнь Вышки доступной и понятной для каждого студента»</div>
+    </div>
+
+    <!-- история проекта с раскрывающимся полным текстом -->
+    <div class="section">
+      <div class="section-label" style="margin-bottom:8px">Немного истории)))</div>
+      <div class="plain-text">
+        Mini App создан студентами для студентов. Мы собрали информацию о клубах кампуса в одном месте, чтобы каждый мог найти сообщество по интересам, следить за событиями и быть частью внеучебной жизни Нижнего Новгорода.
+      </div>
+      <div class="plain-text about-extra" id="history-full" hidden>
+        Идея проекта появилась из простого наблюдения: студенту бывает непросто найти подходящий клуб, разобраться, чем занимаются разные сообщества, и узнать, как к ним присоединиться. Информация часто размещена в разных каналах и чатах, поэтому мы решили сделать единый и понятный каталог.
+        <br><br>
+        Постепенно в приложении появились разделы клубов и категорий, информация о событиях и возможность отправлять предложения. Благодаря заявкам пользователей можно рассказывать о новых инициативах и сообщать об изменениях. Проект продолжает развиваться, а его главная идея остаётся прежней — помогать студентам находить интересы, людей и возможности за пределами учебных занятий.
+      </div>
+      <div class="about-more-row">
+        <button class="link-caps read-more" type="button" data-target="history-full" aria-expanded="false">Читать далее &rsaquo;</button>
+      </div>
+    </div>
+
+    <!-- ссылки -->
+    <div class="section">
+      <div class="section-label" style="margin-bottom:12px">Полезные ссылки</div>
+      <div class="links-list" id="site-links-about"><div class="empty-state">Загрузка ссылок...</div></div>
+      <div class="links-list" style="margin-top:8px"><a href="submit.html?type=feedback">Сообщить об ошибке <span class="chev">›</span></a></div>
+    </div>
+    <div class="section">
+      <div class="section-label" style="margin-bottom:12px">Контакты администрации</div>
+      <div id="admin-contacts-about"><div class="empty-state">Загрузка контактов...</div></div>
+    </div>
+  </div>
+
+  <script src="js/common.js?v=sqlite-users-contacts-20261016"></script>
+  <script>
+    // ============ о проекте ============
+    document.querySelector('.back-ico').innerHTML = I.back;
+    document.querySelectorAll('.chev').forEach((el) => el.innerHTML = I.chev);
+
+    // Кнопки «Читать далее» раскрывают полный текст соответствующего блока.
+    document.querySelectorAll('.read-more').forEach((button) => {
+      button.addEventListener('click', () => {
+        const target = document.getElementById(button.dataset.target);
+        if (!target) return;
+        const isExpanded = button.getAttribute('aria-expanded') === 'true';
+        target.hidden = isExpanded;
+        button.setAttribute('aria-expanded', String(!isExpanded));
+        button.textContent = isExpanded ? 'Читать далее ›' : 'Свернуть ‹';
+      });
+    });
+    loadPublicAppInfo().catch((error) => {
+      const links = document.getElementById('site-links-about');
+      const contacts = document.getElementById('admin-contacts-about');
+      if (links) links.textContent = 'Не удалось загрузить ссылки';
+      if (contacts) contacts.textContent = 'Не удалось загрузить контакты';
+      console.error(error);
+    });
+  </script>
+</body>
+</html>

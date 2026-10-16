@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <!-- шрифт Manrope, тянем с гугл-фонтс -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>Каталог клубов — HSE clubs NN</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/style.css?v=hse-full-update-20261013">
+</head>
+<body data-page="catalog">
+
+  <div id="app">
+    <!-- шапка со стрелкой назад -->
+    <div class="page-header">
+      <a class="back-btn" href="index.html"><span class="back-ico"></span></a>
+      <div class="title">Каталог клубов</div>
+    </div>
+
+    <!-- поиск, ищет прямо на этой странице пока печатаешь -->
+    <div class="section" style="margin-top:0">
+      <div class="search on-gray">
+        <input id="cat-search" placeholder="Поиск по названию или описанию">
+        <span class="search-ico"></span>
+      </div>
+    </div>
+
+    <!-- фильтр по категориям, вставит js -->
+    <div class="chips" id="cat-chips"></div>
+
+    <!-- список клубов -->
+    <div class="section" style="margin-top:10px">
+      <div id="club-list"></div>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item" data-page="home">
+      <span class="nav-icon" data-ico="home"></span>
+      <span class="nav-label">Главная</span>
+    </button>
+    <button class="nav-item" data-page="catalog">
+      <span class="nav-icon" data-ico="lupa"></span>
+      <span class="nav-label">Каталог</span>
+    </button>
+    <button class="nav-item" data-page="events">
+      <span class="nav-icon" data-ico="rupor"></span>
+      <span class="nav-label">События</span>
+    </button>
+    <button class="nav-item" data-page="subs">
+      <span class="nav-icon" data-ico="star"></span>
+      <span class="nav-label">Подписки</span>
+    </button>
+    <button class="nav-item" data-page="profile">
+      <span class="nav-icon" data-ico="profile"></span>
+      <span class="nav-label">Профиль</span>
+    </button>
+  </nav>
+
+  <script src="js/common.js?v=hse-full-update-20261013"></script>
+  <script>
+    // ============ страница каталога ============
+
+    document.querySelector('.back-ico').innerHTML = I.back;
+    document.querySelector('.search-ico').innerHTML = I.search('#8e8e93');
+
+    // читаем что нам передали в адресе (?search=... и ?cat=...)
+    // например с главной прилетает ?search=квиз
+    const urlParams = new URLSearchParams(location.search);
+    let search = urlParams.get('search') || '';
+    let activeCat = urlParams.get('cat') ? Number(urlParams.get('cat')) : null;
+
+    // Иконка категории для обложки клуба, если фотография ещё не загружена.
+    function clubCategorySymbol(categoryId) {
+      const symbols = { 1: '🎉', 2: '🎨', 3: '🌍', 4: '⚽', 5: '💡', 6: '📢' };
+      return symbols[Number(categoryId)] || '★';
+    }
+
+    // Обложка клуба: используем первую фотографию из базы, а если её нет — тематическую обложку.
+    function clubCover(c) {
+      const images = Array.isArray(c.images) ? c.images : [];
+      const photo = images.find((src) => typeof src === 'string' && src.trim());
+      const theme = Math.min(6, Math.max(1, Number(c.categoryId) || 1));
+      const visual = photo
+        ? `<img class="cover-photo" src="${esc(photo)}" alt="" loading="lazy">`
+        : `<div class="cover-art theme-${theme}" aria-hidden="true">
+             <span class="cover-kicker">HSE CLUBS NN</span>
+             <span class="cover-symbol">${clubCategorySymbol(theme)}</span>
+             <span class="cover-caption">${esc(c.categoryName || 'Студенческий клуб')}</span>
+           </div>`;
+      return `<div class="cover club-cover theme-${theme}"><a class="cover-link" href="club.html?id=${c.id}" aria-label="Открыть клуб ${esc(c.name)}">${visual}</a>${starBtn(c.id)}</div>`;
+    }
+
+    // Большая карточка клуба: данные берутся из /api/clubs, а не из текста-заглушки.
+    function bigClubCard(c) {
+      const description = String(c.description || c.short || 'Описание клуба скоро появится.');
+      return `
+        <div class="club-card">
+          ${clubCover(c)}
+          <div class="body">
+            <a href="club.html?id=${c.id}" style="text-decoration:none"><div class="name">${esc(c.name || 'Студенческий клуб')}</div></a>
+            <span class="chip-gray">${esc(c.categoryName || 'Категория не указана')}</span>
+            <div class="desc">${esc(description.slice(0, 110))}${description.length > 110 ? '…' : ''}</div>
+          </div>
+        </div>`;
+    }
+
+    // грузим клубы с учётом поиска и фильтра
+    async function loadClubs() {
+      let url = '/clubs?';
+      if (activeCat) url += 'category=' + activeCat + '&';
+      if (search) url += 'search=' + encodeURIComponent(search);
+      const clubs = await api(url);
+
+      const list = document.getElementById('club-list');
+      list.innerHTML = clubs.map(bigClubCard).join('')
+        || '<div style="text-align:center;color:var(--muted);padding:30px 0">Ничего не найдено :(</div>';
+      bindCommon(list); // заново вешаем звёздочки на новые карточки
+    }
+
+    // рисуем чипсы категорий
+    function renderChips() {
+      const box = document.getElementById('cat-chips');
+      box.innerHTML =
+        `<button class="chip ${!activeCat ? 'active' : ''}" data-cat="">Все</button>` +
+        state.categories.map((c) =>
+          `<button class="chip ${activeCat === c.id ? 'active' : ''}" data-cat="${c.id}">${esc(c.name)}</button>`
+        ).join('');
+
+      // клик по чипсу = фильтр
+      box.querySelectorAll('[data-cat]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          activeCat = btn.dataset.cat ? Number(btn.dataset.cat) : null;
+          renderChips(); // перерисовать чипсы чтобы подсветить выбранный
+          loadClubs();
+        });
+      });
+    }
+
+    // поиск: ждём пока человек перестанет печатать и только тогда ищем
+    // setTimeout с обнулением - так делают "debounce", подглядел в интернете
+    let searchTimer;
+    document.getElementById('cat-search').addEventListener('input', (e) => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => {
+        search = e.target.value.trim();
+        loadClubs();
+      }, 300);
+    });
+
+    // старт
+    (async function init() {
+      document.getElementById('cat-search').value = search; // если прилетели с поиском с главной
+      await loadBase();
+      renderChips();
+      await loadClubs();
+    })();
+  </script>
+</body>
+</html>

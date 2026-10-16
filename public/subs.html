@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <!-- шрифт Manrope, тянем с гугл-фонтс -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>Мои подписки — HSE clubs NN</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/style.css?v=hse-full-update-20261013">
+</head>
+<body data-page="subs">
+
+  <div id="app">
+    <div class="page-header"><div class="title">Мои подписки</div></div>
+
+    <!-- табы: клубы / категории / уведомления -->
+    <div class="tabs">
+      <button data-tab="clubs">Клубы</button>
+      <button data-tab="cats">Категории</button>
+      <button data-tab="notif">Уведомления</button>
+    </div>
+
+    <!-- содержимое таба вставит js -->
+    <div id="tab-content"></div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item" data-page="home">
+      <span class="nav-icon" data-ico="home"></span>
+      <span class="nav-label">Главная</span>
+    </button>
+    <button class="nav-item" data-page="catalog">
+      <span class="nav-icon" data-ico="lupa"></span>
+      <span class="nav-label">Каталог</span>
+    </button>
+    <button class="nav-item" data-page="events">
+      <span class="nav-icon" data-ico="rupor"></span>
+      <span class="nav-label">События</span>
+    </button>
+    <button class="nav-item" data-page="subs">
+      <span class="nav-icon" data-ico="star"></span>
+      <span class="nav-label">Подписки</span>
+    </button>
+    <button class="nav-item" data-page="profile">
+      <span class="nav-icon" data-ico="profile"></span>
+      <span class="nav-label">Профиль</span>
+    </button>
+  </nav>
+
+  <script src="js/common.js?v=hse-full-update-20261013"></script>
+  <script>
+    // ============ страница "мои подписки" ============
+    // тут три таба, переключаются через ?tab= в адресе
+    // (чтобы можно было скинуть ссылку сразу на нужный таб)
+
+    let tab = new URLSearchParams(location.search).get('tab') || 'clubs';
+
+    async function renderPage() {
+      // подсветка табов
+      document.querySelectorAll('[data-tab]').forEach((b) => {
+        b.classList.toggle('on', b.dataset.tab === tab);
+      });
+
+      const box = document.getElementById('tab-content');
+
+      // ---------- ТАБ КЛУБЫ ----------
+      if (tab === 'clubs') {
+        const subs = await api('/subscriptions');
+        const active = subs.clubs.filter((c) => !state.mutedClubs.includes(c.id));
+
+        box.innerHTML = `
+          <div class="subs-count">Активные подписки (${active.length})</div>
+          ${subs.clubs.map((c) => {
+            const enabled = !state.mutedClubs.includes(c.id);
+            return `
+            <div class="sub-item">
+              <div class="icon">${I.star}</div>
+              <a class="info" href="club.html?id=${c.id}">
+                <div class="name">${esc(c.name)}</div>
+                <div class="sub">${enabled ? 'Уведомления включены' : 'Уведомления выключены'}</div>
+              </a>
+              <button class="switch ${enabled ? 'on' : ''}" data-club="${c.id}" data-enabled="${enabled}"></button>
+            </div>`;
+          }).join('') || '<div style="text-align:center;color:var(--muted);padding:30px 16px">Пока нет подписок, загляните в каталог :)</div>'}`;
+      }
+
+      // ---------- ТАБ КАТЕГОРИИ ----------
+      if (tab === 'cats') {
+        const my = state.categories.filter((c) => state.categorySubs.includes(c.id));
+        box.innerHTML = `
+          <div class="subs-count">Активные подписки (${my.length})</div>
+          ${my.map((c) => `
+            <a class="club-row" href="category.html?id=${c.id}">
+              <div class="logo"></div>
+              <div class="info"><div class="name">${esc(c.name)}</div><div class="sub">${esc(c.description.slice(0, 40))}…</div></div>
+              <span class="chev">${I.chev}</span>
+            </a>`).join('') || '<div style="text-align:center;color:var(--muted);padding:30px 16px">Нет подписок на категории</div>'}`;
+      }
+
+      // ---------- ТАБ УВЕДОМЛЕНИЯ ----------
+      if (tab === 'notif') {
+        const history = await api('/notifications/history');
+        box.innerHTML = `
+          <div class="subs-count">История уведомлений</div>
+          ${history.map((n) => `
+            <div class="notif-item">
+              <div class="dot ${n.read ? 'read' : ''}"></div>
+              <div>
+                <div class="club">${esc(n.club)}</div>
+                <div class="text">${esc(n.text)} | ${esc(n.time)}</div>
+              </div>
+            </div>`).join('') || '<div style="text-align:center;color:var(--muted);padding:30px 16px">Уведомлений пока нет</div>'}
+          <div class="section" style="margin-top:14px">
+            <button class="btn btn-outline" id="notif-all-off">Отключить все уведомления</button>
+          </div>`;
+
+        // кнопка выключить всё
+        document.getElementById('notif-all-off').addEventListener('click', async () => {
+          await api('/notifications/disable-all', { method: 'POST' });
+          state.mutedClubs = [...new Set([...state.mutedClubs, ...state.clubSubs])];
+          haptic('light');
+          toast('Все уведомления отключены');
+          renderPage();
+        });
+      }
+
+      // переключатели уведомлений у клубов (таб "клубы")
+      box.querySelectorAll('.switch').forEach((sw) => {
+        sw.addEventListener('click', async () => {
+          const clubId = Number(sw.dataset.club);
+          const enabled = sw.dataset.enabled === 'true'; // что было ДО клика
+          await api(`/subscriptions/${clubId}/notifications`, {
+            method: 'POST',
+            body: JSON.stringify({ enabled }),
+          });
+          if (enabled) state.mutedClubs.push(clubId);
+          else state.mutedClubs = state.mutedClubs.filter((x) => x !== clubId);
+          haptic('light');
+          toast(enabled ? 'Уведомления выключены' : 'Уведомления включены');
+          renderPage();
+        });
+      });
+    }
+
+    // клики по табам
+    document.querySelectorAll('[data-tab]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        tab = btn.dataset.tab;
+        renderPage();
+      });
+    });
+
+    // старт
+    (async function init() {
+      await loadBase();
+      await renderPage();
+    })();
+  </script>
+</body>
+</html>

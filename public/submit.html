@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>Предложить — HSE clubs NN</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/style.css?v=sqlite-users-contacts-20261016">
+</head>
+<body>
+  <div id="app" style="padding-bottom:30px">
+    <div class="page-header">
+      <a class="back-btn" href="profile.html"><span class="back-ico"></span></a>
+      <div class="title">Предложить</div>
+    </div>
+
+    <div class="section" style="margin-top:0">
+      <div class="section-label" style="margin-bottom:10px">Тип запроса</div>
+      <div class="request-list" id="request-list"></div>
+    </div>
+
+    <div class="section" id="form-area" style="display:none">
+      <div id="form-fields"></div>
+      <button class="btn btn-orange" id="f-save">Сохранить черновик</button>
+      <button class="btn btn-orange" id="f-send">Отправить на модерацию</button>
+    </div>
+  </div>
+
+  <script src="js/common.js?v=sqlite-users-contacts-20261016"></script>
+  <script>
+    document.querySelector('.back-ico').innerHTML = I.back;
+
+    const types = [
+      { key: 'club', label: 'Добавить новый клуб' },
+      { key: 'event', label: 'Предложить анонс события' },
+      { key: 'fix', label: 'Исправить карточку клуба' },
+      { key: 'feedback', label: 'Связаться с админом' }
+    ];
+
+    const eventFields = [
+      ['title', 'Название события'],
+      ['clubName', 'Название клуба или организатора'],
+      ['description', 'Описание', 'textarea'],
+      ['date', 'Дата', 'date'],
+      ['time', 'Время', 'time'],
+      ['place', 'Место'],
+      ['registration', 'Ссылка на регистрацию', 'url'],
+      ['contact', 'Контакт организатора'],
+      ['announcement', 'Текст анонса', 'textarea'],
+      ['images', 'Загрузить изображения', 'file']
+    ];
+
+    const clubFields = [
+      ['title', 'Название клуба'],
+      ['short', 'Краткое описание', 'textarea'],
+      ['description', 'Полное описание', 'textarea'],
+      ['categoryId', 'Категория', 'category'],
+      ['channel', 'Telegram-канал', 'url'],
+      ['chat', 'Telegram-чат', 'url'],
+      ['formUrl', 'Ссылка на форму вступления', 'url'],
+      ['social', 'Социальные сети', 'textarea'],
+      ['contact', 'Контакт представителя'],
+      ['chairman', 'Имя председателя'],
+      ['recruitment', 'Статус набора'],
+      ['photos', 'Фотографии', 'file'],
+      ['logo', 'Логотип', 'file'],
+      ['materials', 'Дополнительные материалы', 'url']
+    ];
+
+    const fixFields = [
+      ['clubId', 'Выберите клуб', 'club'],
+      ['changeType', 'Тип изменения', 'change'],
+      ['details', 'Что нужно исправить', 'textarea'],
+      ['images', 'Добавить фотографии', 'file']
+    ];
+
+    const changeTypes = [
+      'Название', 'Описание', 'Категория', 'Контакты',
+      'Telegram-канал', 'Чат', 'Ссылка на форму', 'Председатель',
+      'Фотографии', 'События', 'Другая информация'
+    ];
+
+    let selected = '';
+    let clubs = [];
+    let categories = [];
+    let editId = new URLSearchParams(location.search).get('edit');
+    const formArea = document.getElementById('form-area');
+    const fieldsBox = document.getElementById('form-fields');
+
+    async function openAdminContact() {
+      try {
+        const info = await api('/app-info');
+        const contact = (info.adminContacts || []).find(item => item.isPrimary) || (info.adminContacts || [])[0];
+        const url = contact && safeExternalUrl(contact.telegramUrl || (contact.telegramUsername ? 'https://t.me/' + String(contact.telegramUsername).replace(/^@/, '') : ''));
+        if (!url) throw new Error('Контакт администратора не настроен');
+        if (tg && typeof tg.openTelegramLink === 'function' && url.startsWith('https://t.me/')) tg.openTelegramLink(url);
+        else location.href = url;
+      } catch (error) {
+        toast(error.message || 'Не удалось открыть контакт администратора');
+      }
+    }
+
+    function makeField(field) {
+      const id = 'f-' + field[0];
+      const type = field[2] || 'text';
+      let control = '';
+
+      if (type === 'textarea') {
+        control = `<textarea class="textarea" id="${id}" placeholder="${field[1]}"></textarea>`;
+      } else if (type === 'file') {
+        control = `<input class="input" id="${id}" type="file" accept="image/*" multiple>`;
+      } else if (type === 'club') {
+        control = `<select class="input" id="${id}">${clubs.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select>`;
+      } else if (type === 'change') {
+        control = `<select class="input" id="${id}">${changeTypes.map(c => `<option value="${c}">${c}</option>`).join('')}</select>`;
+      } else if (type === 'category') {
+        control = `<select class="input" id="${id}">${categories.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('')}</select>`;
+      } else {
+        control = `<input class="input" id="${id}" type="${type}" placeholder="${field[1]}">`;
+      }
+
+      return `<div class="form-row"><label class="form-label" for="${id}">${field[1]}</label>${control}</div>`;
+    }
+
+    function renderForm() {
+      document.querySelectorAll('[data-type]').forEach(button => {
+        button.classList.toggle('selected', button.dataset.type === selected);
+      });
+
+      formArea.style.display = selected && selected !== 'feedback' ? 'block' : 'none';
+
+      if (selected === 'feedback') {
+        openAdminContact();
+        return;
+      }
+
+      if (!selected) return;
+
+      let fields = eventFields;
+      if (selected === 'club') fields = clubFields;
+      if (selected === 'fix') fields = fixFields;
+      fieldsBox.innerHTML = fields.map(makeField).join('');
+      document.getElementById('f-send').textContent = new URLSearchParams(location.search).get('resend') === '1' ? 'Отправить исправления' : 'Отправить на модерацию';
+    }
+
+    async function getData() {
+      const data = {};
+      fieldsBox.querySelectorAll('input, textarea, select').forEach(field => {
+        if (field.type !== 'file') data[field.id.replace('f-', '')] = field.value.trim();
+      });
+
+      const files = fieldsBox.querySelectorAll('input[type="file"]');
+      data.images = [];
+      for (const input of files) {
+        for (const file of input.files) {
+          if (file.size > 5 * 1024 * 1024) {
+            throw new Error('Размер изображения не должен превышать 5 МБ');
+          }
+          data.images.push({
+            name: file.name,
+            type: file.type,
+            data: await new Promise(resolve => {
+              const reader = new FileReader();
+              reader.onload = () => resolve(reader.result);
+              reader.readAsDataURL(file);
+            })
+          });
+        }
+      }
+      return data;
+    }
+
+    function getTitle(data) {
+      if (data.title) return data.title;
+      if (selected === 'fix') return 'Исправление карточки клуба';
+      return 'Новая заявка';
+    }
+
+    async function sendForm(draft) {
+      if (selected === 'feedback') {
+        await openAdminContact();
+        return;
+      }
+
+      try {
+        const data = await getData();
+        if (selected !== 'fix' && !data.title) {
+          toast('Укажите название');
+          return;
+        }
+        if (selected === 'fix' && !data.details) {
+          toast('Напишите, что нужно исправить');
+          return;
+        }
+
+        const images = data.images;
+        delete data.images;
+        const payload = {
+          type: selected,
+          title: getTitle(data),
+          details: JSON.stringify(data),
+          media: JSON.stringify(images),
+          draft: Boolean(draft)
+        };
+
+        if (editId) {
+          await api('/submissions/' + editId, {
+            method: 'PUT',
+            body: JSON.stringify(payload)
+          });
+        } else {
+          await api('/submissions', {
+            method: 'POST',
+            body: JSON.stringify(payload)
+          });
+        }
+
+        toast(draft ? 'Черновик сохранён' : 'Заявка отправлена');
+        setTimeout(() => location.href = 'profile.html', 700);
+      } catch (error) {
+        toast(error.message || 'Не удалось отправить заявку');
+      }
+    }
+
+    document.getElementById('request-list').innerHTML = types.map(t =>
+      `<button class="request-item" data-type="${t.key}"><span>${t.label}</span><span class="plus">+</span></button>`
+    ).join('');
+
+    document.querySelectorAll('[data-type]').forEach(button => {
+      button.addEventListener('click', () => {
+        selected = button.dataset.type;
+        renderForm();
+      });
+    });
+
+    document.getElementById('f-send').addEventListener('click', () => sendForm(false));
+    document.getElementById('f-save').addEventListener('click', () => sendForm(true));
+
+    Promise.all([api('/clubs'), api('/categories')]).then(async result => {
+      clubs = result[0];
+      categories = result[1];
+      const queryType = new URLSearchParams(location.search).get('type');
+
+      if (editId) {
+        const submissions = await api('/submissions/my');
+        const item = submissions.find(s => s.id === Number(editId));
+        if (!item) {
+          toast('Заявка не найдена');
+          return;
+        }
+        selected = item.type;
+        renderForm();
+        let oldData = {};
+        try { oldData = JSON.parse(item.details || '{}'); } catch (e) {}
+        Object.keys(oldData).forEach(key => {
+          const field = document.getElementById('f-' + key);
+          if (field && field.type !== 'file') field.value = oldData[key];
+        });
+      } else if (types.some(t => t.key === queryType)) {
+        selected = queryType;
+        renderForm();
+      }
+    }).catch(() => toast('Не удалось загрузить данные'));
+
+  </script>
+</body>
+</html>
