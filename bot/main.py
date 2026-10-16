@@ -20,7 +20,7 @@ main_menu_keyboard = ReplyKeyboardMarkup(
         ],
         [
             KeyboardButton(text="⭐ Мои подписки"),
-            KeyboardButton(text="💙 Открыть мини-приложение")
+            KeyboardButton(text="💙 Мини-приложение")
         ],
         [
             KeyboardButton(text="✍️ Идеи и предложения"),
@@ -82,7 +82,7 @@ async def help_handler(message: types.Message):
     )
 
 @dp.message(Command("app"))
-@dp.message(F.text == "💙 Открыть мини-приложение")
+@dp.message(F.text == "💙 Мини-приложение")
 async def miniapp_handler(message: types.Message):
     await message.answer(
         "💙 **Визуальный каталог внеучебки (Mini App)**\n\n"
@@ -192,7 +192,7 @@ async def search_handler(message: types.Message):
 @dp.message(F.text == "📋 Все клубы")
 async def all_clubs_handler(message: types.Message):
     await message.answer("Здесь будет список всех 30 клубов.")
-@dp.message(F.text == "💙 Открыть мини-приложение")
+@dp.message(F.text == "💙 Мини-приложение")
 async def miniapp_handler(message: types.Message):
     await message.answer("Здесь скоро будет кнопка запуска визуального каталога.")
 @dp.message(F.text == "⭐ Мои подписки")
