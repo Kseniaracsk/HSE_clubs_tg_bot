@@ -1,4 +1,5 @@
 import os
+import re
 import asyncio 
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types, F
@@ -49,10 +50,18 @@ async def get_category_name(category_id: int):
             row = await cursor.fetchone()
             return row[0] if row else "Категория"
 
+async def get_clubs_by_category(category_id: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT id, name FROM clubs WHERE category_id = ? AND is_active = 1 ORDER BY name",
+            (category_id,)
+        ) as cursor:
+            return await cursor.fetchall()
+
 async def get_club_by_id(club_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute(
-            "SELECT name, short_description, telegram_channel_url, chairperson_contact FROM clubs WHERE id = ?",
+            "SELECT name, short_description, full_description, telegram_channel_url, chairperson_contact, vk_group_url, category_id, application_form_url FROM clubs WHERE id = ?",
             (club_id,)
         ) as cursor:
             return await cursor.fetchone() 
@@ -97,7 +106,7 @@ def calc_word_similarity(query_word: str, target_word: str):
     root_ratio = SequenceMatcher(None, query_word, target_word[:prefix_len]).ratio() if len(target_word) > len(query_word) else 0.0
     return max(full_ratio, root_ratio)
 
-async def search_clubs_by_name(query):
+async def search_clubs_by_name(query: str):
     q = query.lower().strip()
     if not q:
         return []
@@ -183,15 +192,25 @@ async def categories_handler(message: types.Message):
 
 @dp.callback_query(F.data.startswith("category_"))
 async def category_click_handler(callback: types.CallbackQuery):
-    await callback.answer() 
+    await callback.answer()  
     category_id = int(callback.data.split("_")[1])
     category_name = await get_category_name(category_id)
-    keyboard = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(text="⬅️ Назад к категориям", callback_data="back_to_categories")]
+    clubs = await get_clubs_by_category(category_id)
+    buttons = []
+    for club_id, club_name in clubs:
+        buttons.append([
+            InlineKeyboardButton(text=club_name, callback_data=f"club_{club_id}")
+        ])
+    buttons.append([
+        InlineKeyboardButton(text="⬅️ Назад к категориям", callback_data="back_to_categories")
     ])
+    if clubs:
+        text = f"📂 Клубы направления **{category_name}** ({len(clubs)}):\n\nВыбери клуб, чтобы открыть карточку:"
+    else:
+        text = f"📂 В направлении **{category_name}** пока нет активных клубов."  
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
     await callback.message.edit_text(
-        f"📂 Ты выбрала категорию: **{category_name}**\n\n"
-        "Скоро здесь покажем клубы этого направления!",
+        text,
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
@@ -238,25 +257,42 @@ async def show_all_clubs_handler(callback: types.CallbackQuery):
 async def club_click_handler(callback: types.CallbackQuery):
     await callback.answer()
     club_id = int(callback.data.split("_")[1])
-    
     club = await get_club_by_id(club_id)
     if not club:
         await callback.message.answer("Информация о клубе не найдена.")
         return
-    name, short_desc, tg_url, curator = club
-    text = f"✨ **{name}**\n\n{short_desc}\n"
+    name, short_desc, full_desc, tg_url, curator, vk_url, category_id, app_form_url = club
+    desc = full_desc if full_desc else short_desc
+    clean_desc = re.sub(r'\n\s*\n+', '\n\n', desc.strip()).replace("* ", "• ").replace("_", "\\_")
+    text = f"✨ **{name}**\n\n{clean_desc}\n"
+    if app_form_url:
+        text += f"\n📝 **Форма регистрации:** [заполнить анкету]({app_form_url})\n"
     if curator:
-        text += f"\n👤 Куратор: {curator}"
+        clean_curator = curator.replace("_", "\\_")
+        text += f"\n👤 Куратор: {clean_curator}"
     card_buttons = []
-    if tg_url:
+    if app_form_url:
         card_buttons.append([
-            InlineKeyboardButton(text="📢 Перейти в Telegram-канал", url=tg_url)
+            InlineKeyboardButton(text="📝 Подать заявку", url=app_form_url)
         ])
+    social_row = []
+    if tg_url:
+        social_row.append(InlineKeyboardButton(text="⭐ Подписаться", url=tg_url))
+    if vk_url:
+        social_row.append(InlineKeyboardButton(text="🌐 ВК", url=vk_url))
+    if social_row:
+        card_buttons.append(social_row)
     card_buttons.append([
-        InlineKeyboardButton(text="⬅️ Назад ко всем клубам", callback_data="show_all_clubs")
+        InlineKeyboardButton(text="⬅️ К направлению", callback_data=f"category_{category_id}"),
+        InlineKeyboardButton(text="📋 Все клубы", callback_data="show_all_clubs")
     ])
+    
     keyboard = InlineKeyboardMarkup(inline_keyboard=card_buttons)
-    await callback.message.answer(text, reply_markup=keyboard, parse_mode="Markdown")
+    await callback.message.answer(
+        text,
+        reply_markup=keyboard,
+        parse_mode="Markdown"
+    )
 
 
 @dp.message(F.text == "🔍 Найти клуб")
@@ -283,10 +319,9 @@ async def process_search_handler(message: types.Message, state: FSMContext):
     ]
     if not clubs:
         await message.answer(
-            f"По запросу «**{user_query}**» ничего не нашлось.\n\n"
+            f"По запросу «{user_query}» ничего не нашлось.\n\n"
             "Попробуй ввести другое слово или открой список всех клубов:",
-            reply_markup=InlineKeyboardMarkup(inline_keyboard=nav_buttons),
-            parse_mode="Markdown"
+            reply_markup=InlineKeyboardMarkup(inline_keyboard=nav_buttons)
         )
         return
     buttons = []
