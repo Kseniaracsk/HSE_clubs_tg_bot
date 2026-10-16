@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <!-- шрифт Manrope, тянем с гугл-фонтс -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>Профиль — HSE clubs NN</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/style.css?v=sqlite-users-contacts-20261016">
+</head>
+<body data-page="profile">
+
+  <div id="app">
+    <div class="page-header"><div class="title">Профиль</div></div>
+
+    <!-- карточка юзера -->
+    <div class="section" style="margin-top:0">
+      <div class="profile-card">
+        <!-- аватарка: если в тг есть фото - подставится она, нет - icons/ava.png -->
+        <img class="ava" id="user-ava" src="icons/ava.png" alt="аватарка">
+        <div>
+          <div class="name" id="user-name">Студент</div>
+          <div class="tag" id="user-tag">@hse_student · Студент Вышки</div>
+          <span class="role-badge role-user" id="user-role">Пользователь</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-label" style="margin-bottom:12px">Мои заявки</div>
+      <div id="my-submissions">Загрузка заявок...</div>
+    </div>
+
+    <!-- настройки -->
+    <div class="section" id="admin-panel-entry" hidden>
+      <a href="admin.html" class="btn btn-blue admin-panel-button"><span>▦</span> Панель админа</a>
+    </div>
+
+    <div class="section">
+      <div class="section-label" style="margin-bottom:12px">Настройки</div>
+      <div class="links-list">
+        <a href="subs.html">Мои подписки <span class="chev">›</span></a>
+        <a href="submit.html">Предложить клуб / событие <span class="chev">›</span></a>
+        <a href="about.html">О проекте <span class="chev">›</span></a>
+      </div>
+    </div>
+
+    <!-- полезные ссылки -->
+    <div class="section">
+      <div class="section-label" style="margin-bottom:12px">Полезные ссылки</div>
+      <div class="links-list" id="site-links-profile"><div class="empty-state">Загрузка ссылок...</div></div>
+    </div>
+
+    <div class="section">
+      <div class="section-label" style="margin-bottom:12px">Контакты администрации</div>
+      <div id="admin-contacts-profile"><div class="empty-state">Загрузка контактов...</div></div>
+    </div>
+
+    <!-- кнопка выйти, она просто стирает флажок входа -->
+    <div class="section" style="margin-top:28px">
+      <button class="btn btn-outline" id="logout-btn">Выйти</button>
+    </div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item" data-page="home">
+      <span class="nav-icon" data-ico="home"></span>
+      <span class="nav-label">Главная</span>
+    </button>
+    <button class="nav-item" data-page="catalog">
+      <span class="nav-icon" data-ico="lupa"></span>
+      <span class="nav-label">Каталог</span>
+    </button>
+    <button class="nav-item" data-page="events">
+      <span class="nav-icon" data-ico="rupor"></span>
+      <span class="nav-label">События</span>
+    </button>
+    <button class="nav-item" data-page="subs">
+      <span class="nav-icon" data-ico="star"></span>
+      <span class="nav-label">Подписки</span>
+    </button>
+    <button class="nav-item" data-page="profile">
+      <span class="nav-icon" data-ico="profile"></span>
+      <span class="nav-label">Профиль</span>
+    </button>
+  </nav>
+
+  <script src="js/common.js?v=sqlite-users-contacts-20261016"></script>
+  <script>
+    // ============ профиль ============
+    // тут имя юзера из телеграма и его аватарка
+
+    (async function init() {
+      const user = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+      document.getElementById('user-ava').src = getAvaUrl();
+      if (user) {
+        document.getElementById('user-name').textContent = user.first_name || 'Студент';
+        document.getElementById('user-tag').textContent = '@' + (user.username || 'hse_student') + ' · Студент Вышки';
+      }
+      document.querySelectorAll('.chev').forEach((el) => el.innerHTML = I.chev);
+
+      try {
+        const me = await api('/me');
+        document.getElementById('user-name').textContent = me.name || 'Пользователь Telegram';
+        document.getElementById('user-tag').textContent = me.username ? '@' + me.username + ' · Telegram' : 'Telegram ID: ' + me.telegramId;
+        if (me.photoUrl) document.getElementById('user-ava').src = me.photoUrl;
+        const role = document.getElementById('user-role');
+        role.textContent = me.isAdmin ? 'Администратор' : 'Пользователь';
+        role.classList.toggle('role-admin', Boolean(me.isAdmin));
+        role.classList.toggle('role-user', !me.isAdmin);
+        document.getElementById('admin-panel-entry').hidden = !me.isAdmin;
+        if (me.isAdmin) localStorage.setItem('hse_role', 'admin');
+        else localStorage.removeItem('hse_role');
+      } catch (error) {
+        document.getElementById('user-role').textContent = 'Пользователь';
+        document.getElementById('admin-panel-entry').hidden = true;
+      }
+    })();
+
+    document.getElementById('logout-btn').addEventListener('click', () => {
+      haptic('light');
+      logout();
+    });
+
+    async function loadMySubmissions() {
+      const box = document.getElementById('my-submissions');
+
+      try {
+        const list = await api('/submissions/my');
+
+        if (!list.length) {
+          box.textContent = 'У вас пока нет заявок';
+          return;
+        }
+
+        const statusNames = {
+          pending: 'На модерации',
+          approved: 'Одобрена',
+          changes: 'Нужны исправления',
+          rejected: 'Отклонена',
+          published: 'Опубликована',
+          draft: 'Черновик',
+          cancelled: 'Отменена'
+        };
+
+        box.innerHTML = list.map(s => `
+          <div class="history-card">
+            <b>Заявка №${s.id}</b>
+            <div>Тип: ${esc(s.type)}</div>
+            <div>Создана: ${new Date(s.createdAt).toLocaleString('ru-RU')}</div>
+            <div>Статус: ${esc(statusNames[s.status] || s.status)}</div>
+            <div>Комментарий администратора: ${esc(s.adminComment || 'Нет')}</div>
+            ${s.publishedAt ? `<div>Дата публикации: ${new Date(s.publishedAt).toLocaleString('ru-RU')}</div>` : ''}
+            <button class="btn btn-outline" data-open="${s.id}">Открыть заявку</button>
+            ${['pending', 'changes', 'draft'].includes(s.status) ? `<button class="btn btn-outline" data-edit="${s.id}">Изменить черновик</button>` : ''}
+            ${s.status === 'changes' ? `<button class="btn btn-orange" data-resend="${s.id}">Отправить исправления</button>` : ''}
+            ${['pending', 'changes', 'draft'].includes(s.status) ? `<button class="btn btn-outline" data-cancel="${s.id}">Отменить заявку</button>` : ''}
+          </div>
+        `).join('');
+
+        box.querySelectorAll('[data-open]').forEach(button => {
+          button.addEventListener('click', () => {
+            const item = list.find(s => s.id === Number(button.dataset.open));
+            alert(item.title + '\\n\\n' + item.details);
+          });
+        });
+
+        box.querySelectorAll('[data-edit], [data-resend]').forEach(button => {
+          button.addEventListener('click', () => {
+            location.href = 'submit.html?edit=' + (button.dataset.edit || button.dataset.resend) + (button.dataset.resend ? '&resend=1' : '');
+          });
+        });
+
+        box.querySelectorAll('[data-cancel]').forEach(button => {
+          button.addEventListener('click', async () => {
+            if (!confirm('Отменить заявку?')) return;
+            try {
+              await api('/submissions/' + button.dataset.cancel + '/cancel', {
+                method: 'POST',
+                body: JSON.stringify({})
+              });
+              await loadMySubmissions();
+            } catch (e) {
+              toast(e.message);
+            }
+          });
+        });
+      } catch (e) {
+        box.textContent = 'Не удалось загрузить заявки';
+      }
+    }
+
+    loadMySubmissions();
+    loadPublicAppInfo().catch((error) => {
+      const links = document.getElementById('site-links-profile');
+      const contacts = document.getElementById('admin-contacts-profile');
+      if (links) links.textContent = 'Не удалось загрузить ссылки';
+      if (contacts) contacts.textContent = 'Не удалось загрузить контакты';
+      console.error(error);
+    });
+  </script>
+</body>
+</html>

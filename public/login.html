@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <!-- чтобы на телефоне нормально смотрелось, без этого всё мелко -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Вход — HSE clubs NN</title>
+  <!-- официальная библиотека телеграма -->
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- шрифт Manrope, тянем с гугла -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css?v=sqlite-users-contacts-20261016">
+</head>
+<!-- у этой страницы нет data-page, потому что меню снизу тут не показывается -->
+<body>
+
+  <div id="app">
+    <!-- ===== вся страница синяя, это экран входа ===== -->
+    <div class="login-page">
+      <!-- настоящий логотип вышки из папки icons -->
+      <img class="app-logo" src="icons/НИУВШЭ.png" alt="Логотип ВШЭ">
+      <div class="login-title">HSE clubs NN</div>
+      <div class="login-sub">все клубы Вышки в одном месте</div>
+
+      <!-- аватарка юзера: если в тг есть фото - покажется она,
+           нет - поставится icons/ava.png (это делает js снизу) -->
+      <img class="login-ava" id="login-ava" src="icons/ava.png" alt="аватарка">
+
+      <div class="login-name" id="login-name">Студент</div>
+      <div class="login-username" id="login-username">@hse_student</div>
+
+      <!-- кнопка входа, она белая на синем фоне -->
+      <button class="btn btn-white" id="login-btn">Продолжить</button>
+
+      <button class="admin-login-toggle" id="admin-login-toggle" type="button">Я администратор</button>
+      <div class="admin-code-panel" id="admin-code-panel" hidden>
+        <label for="admin-code">Введите специальный код администратора</label>
+        <input id="admin-code" type="password" autocomplete="one-time-code" placeholder="Код доступа">
+        <button class="btn btn-white" id="admin-code-submit" type="button">Подтвердить код</button>
+      </div>
+
+      <!-- мелкая подпись снизу -->
+      <div class="login-note">вход через ваш аккаунт Telegram</div>
+    </div>
+  </div>
+
+  <script src="js/common.js?v=sqlite-users-contacts-20261016"></script>
+  <script>
+    // Страница входа: обычный вход и отдельная активация роли администратора.
+    const user = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+    const loginAva = document.getElementById('login-ava');
+    const loginName = document.getElementById('login-name');
+    const loginUsername = document.getElementById('login-username');
+    const loginBtn = document.getElementById('login-btn');
+    const adminToggle = document.getElementById('admin-login-toggle');
+    const adminPanel = document.getElementById('admin-code-panel');
+    const adminCode = document.getElementById('admin-code');
+
+    if (user) {
+      loginAva.src = getAvaUrl();
+      loginName.textContent = user.first_name || 'Студент';
+      loginUsername.textContent = user.username ? '@' + user.username : 'Аккаунт Telegram';
+      loginBtn.textContent = 'Продолжить как ' + (user.first_name || 'студент');
+    } else {
+      loginBtn.textContent = 'Продолжить через Telegram';
+    }
+
+    if (localStorage.getItem('hse_user')) location.href = 'index.html';
+
+    async function continueLogin(destination = 'index.html') {
+      const result = await api('/auth', { method: 'POST', body: JSON.stringify({}) });
+      if (result.user) {
+        loginName.textContent = result.user.name || 'Пользователь Telegram';
+        loginUsername.textContent = result.user.username ? '@' + result.user.username : 'Telegram';
+      }
+      localStorage.setItem('hse_user', '1');
+      haptic('success');
+      location.href = destination;
+    }
+
+    loginBtn.addEventListener('click', async () => {
+      try { await continueLogin(); }
+      catch (e) { toast('Не получилось войти: ' + e.message); }
+    });
+
+    adminToggle.addEventListener('click', () => {
+      adminPanel.hidden = !adminPanel.hidden;
+      if (!adminPanel.hidden) adminCode.focus();
+    });
+
+    document.getElementById('admin-code-submit').addEventListener('click', async () => {
+      const code = adminCode.value.trim();
+      if (!code) { toast('Введите код администратора'); adminCode.focus(); return; }
+      const submitButton = document.getElementById('admin-code-submit');
+      submitButton.disabled = true;
+      try {
+        await api('/admin/access', { method: 'POST', body: JSON.stringify({ code }) });
+        localStorage.setItem('hse_user', '1');
+        localStorage.setItem('hse_role', 'admin');
+        toast('Роль администратора активирована');
+        location.href = 'profile.html';
+      } catch (e) {
+        toast(e.message || 'Не удалось подтвердить код');
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+
+    adminCode.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') document.getElementById('admin-code-submit').click();
+    });
+  </script>
+</body>
+</html>

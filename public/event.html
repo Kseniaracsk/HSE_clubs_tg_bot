@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>Событие — HSE clubs NN</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/style.css?v=hse-full-update-20261013">
+</head>
+<body>
+  <div id="app" class="event-detail-app">
+    <div class="event-detail-hero" id="event-hero">
+      <a class="back-btn" href="events.html" aria-label="Назад"><span class="back-ico"></span></a>
+      <span id="event-star"></span>
+      <div class="event-hero-content" id="event-hero-content"></div>
+    </div>
+    <main class="event-detail-body" id="event-detail-body"><div class="loading-card">Загружаем событие…</div></main>
+    <div class="pin-bottom">
+      <a class="btn btn-blue" id="event-cta" href="events.html">К странице событий</a>
+    </div>
+  </div>
+
+  <script src="js/common.js?v=hse-full-update-20261013"></script>
+  <script>
+    document.querySelector('.back-ico').innerHTML = I.back;
+    const eventId = Number(new URLSearchParams(location.search).get('id'));
+    let currentEvent = null;
+
+    function validUrl(value) {
+      const raw = String(value || '').trim();
+      if (/^https?:\/\//i.test(raw)) return raw;
+      if (/^(t\.me|telegram\.me)\//i.test(raw)) return 'https://' + raw;
+      return '';
+    }
+    function dateParts(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return { date: 'Дата уточняется', time: 'Время уточняется' };
+      return {
+        date: date.toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+        time: date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+      };
+    }
+    function symbolFor(type) {
+      const value = String(type || '').toLowerCase();
+      if (value.includes('лекц') || value.includes('наук')) return '💡';
+      if (value.includes('конц') || value.includes('твор') || value.includes('театр')) return '🎨';
+      if (value.includes('игр') || value.includes('квиз') || value.includes('турнир')) return '🎯';
+      if (value.includes('спорт')) return '⚡';
+      return '📅';
+    }
+    function renderEvent(e) {
+      currentEvent = e;
+      const club = e.club || {};
+      const categoryId = Math.min(6, Math.max(1, Number(club.categoryId) || 1));
+      const parts = dateParts(e.datetime);
+      const image = e.image || (Array.isArray(e.images) ? e.images.find(Boolean) : '') || '';
+      document.getElementById('event-hero').classList.add('theme-' + categoryId);
+      document.getElementById('event-hero-content').innerHTML = image
+        ? `<img class="event-detail-photo" src="${esc(image)}" alt="Обложка события"><div class="event-hero-shade"></div><div class="event-hero-copy"><span class="event-type-pill">${esc(e.type || 'Событие')}</span><h1>${esc(e.title || 'Событие')}</h1></div>`
+        : `<div class="event-detail-art cover-art theme-${categoryId}"><span class="cover-kicker">HSE CLUBS NN · СОБЫТИЕ</span><span class="cover-symbol">${symbolFor(e.type)}</span></div><div class="event-hero-copy"><span class="event-type-pill">${esc(e.type || 'Событие')}</span><h1>${esc(e.title || 'Событие')}</h1></div>`;
+      document.getElementById('event-star').innerHTML = starBtn(e.clubId);
+      document.title = (e.title || 'Событие') + ' — HSE clubs NN';
+
+      document.getElementById('event-detail-body').innerHTML = `
+        <div class="event-detail-meta">
+          <div class="event-detail-meta-row"><span class="detail-icon">${I.calendar}</span><div><small>Дата и время</small><b>${esc(parts.date)}</b><span>${esc(parts.time)}</span></div></div>
+          <div class="event-detail-meta-row"><span class="detail-icon">${I.pin}</span><div><small>Место проведения</small><b>${esc(e.place || 'Место уточняется')}</b></div></div>
+        </div>
+        <section class="detail-section"><div class="section-label">О событии</div><p class="event-description">${esc(e.description || 'Подробная информация о событии появится в канале клуба-организатора. Следите за обновлениями перед посещением.')}</p></section>
+        <section class="detail-section"><div class="section-label">Организатор</div>
+          <a class="event-organizer-card" href="club.html?id=${Number(e.clubId) || ''}">
+            <span class="event-organizer-mark">${symbolFor(e.type)}</span>
+            <span class="event-organizer-info"><b>${esc(club.name || 'Студенческий клуб')}</b><small>${esc(club.categoryName || 'Клуб НИУ ВШЭ')}</small></span><span class="chev">${I.chev}</span>
+          </a>
+          ${club.description ? `<p class="event-organizer-description">${esc(club.short || club.description)}</p>` : ''}
+        </section>
+        <section class="detail-section"><div class="section-label">Полезная информация</div>
+          <div class="event-info-card"><div><b>Участие</b><p>${e.registrationUrl && validUrl(e.registrationUrl) ? 'Перейдите по ссылке регистрации, чтобы принять участие.' : 'Уточните необходимость регистрации и условия участия в канале организатора.'}</p></div>
+          <a href="${esc(validUrl(e.registrationUrl) || validUrl(club.channel) || ('club.html?id=' + Number(e.clubId)))}" ${validUrl(e.registrationUrl) || validUrl(club.channel) ? 'target="_blank" rel="noopener"' : ''} class="btn btn-outline">${e.registrationUrl && validUrl(e.registrationUrl) ? 'Регистрация' : 'Связаться с клубом'}</a></div>
+        </section>
+        <div class="club-footer-links"><button class="link-caps" id="share-event">${I.share} ПОДЕЛИТЬСЯ СОБЫТИЕМ</button><a class="link-caps" href="submit.html?type=feedback" style="color:var(--orange)">${I.warn} СООБЩИТЬ ОБ ОШИБКЕ</a></div>
+      `;
+      const cta = document.getElementById('event-cta');
+      const actionUrl = validUrl(e.registrationUrl) || validUrl(club.channel);
+      if (actionUrl) {
+        cta.href = actionUrl;
+        cta.target = '_blank';
+        cta.rel = 'noopener';
+        cta.textContent = e.registrationUrl ? 'Зарегистрироваться' : 'Канал организатора';
+      } else {
+        cta.href = 'club.html?id=' + Number(e.clubId);
+        cta.textContent = 'Страница клуба';
+      }
+      bindCommon();
+      document.getElementById('share-event').addEventListener('click', () => {
+        const url = `https://t.me/share/url?url=${encodeURIComponent(location.href)}&text=${encodeURIComponent(e.title || 'Событие HSE clubs NN')}`;
+        if (tg && tg.openTelegramLink) tg.openTelegramLink(url); else window.open(url, '_blank', 'noopener');
+      });
+    }
+
+    (async function init() {
+      try {
+        if (!eventId) throw new Error('Не указан номер события');
+        await loadBase();
+        renderEvent(await api('/events/' + eventId));
+      } catch (error) {
+        document.getElementById('event-detail-body').innerHTML = `<div class="empty-state">${esc(error.message || 'Не удалось загрузить событие')}<br><a class="link-blue" href="events.html">Вернуться к событиям</a></div>`;
+      }
+    })();
+  </script>
+</body>
+</html>

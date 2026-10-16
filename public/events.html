@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <!-- шрифт Manrope, тянем с гугл-фонтс -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>События — HSE clubs NN</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/style.css?v=hse-full-update-20261013">
+</head>
+<body data-page="events">
+
+  <div id="app">
+    <!-- шапка: название и переключатель список/календарь -->
+    <div class="page-header" style="justify-content:space-between">
+      <div class="title">События</div>
+      <div class="seg">
+        <button class="on" type="button">Список</button>
+        <a class="seg-link" href="calendar.html">Календарь</a>
+      </div>
+    </div>
+
+    <!-- фильтры -->
+    <div class="filter-bar">
+      <button class="chip" data-filter="today"><span class="f-cal"></span> Сегодня</button>
+      <button class="chip" data-filter="all">Все категории</button>
+      <button class="chip" data-filter="my">Мои клубы</button>
+    </div>
+
+    <!-- сюда js вставит события по дням -->
+    <div id="events-list"></div>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item" data-page="home">
+      <span class="nav-icon" data-ico="home"></span>
+      <span class="nav-label">Главная</span>
+    </button>
+    <button class="nav-item" data-page="catalog">
+      <span class="nav-icon" data-ico="lupa"></span>
+      <span class="nav-label">Каталог</span>
+    </button>
+    <button class="nav-item" data-page="events">
+      <span class="nav-icon" data-ico="rupor"></span>
+      <span class="nav-label">События</span>
+    </button>
+    <button class="nav-item" data-page="subs">
+      <span class="nav-icon" data-ico="star"></span>
+      <span class="nav-label">Подписки</span>
+    </button>
+    <button class="nav-item" data-page="profile">
+      <span class="nav-icon" data-ico="profile"></span>
+      <span class="nav-label">Профиль</span>
+    </button>
+  </nav>
+
+  <script src="js/common.js?v=hse-full-update-20261013"></script>
+  <script>
+    // ============ страница событий ============
+
+    document.querySelector('.f-cal').innerHTML = I.calendar;
+
+    // месяца по-русски, js сам их не умеет (странно, да?)
+    const MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+
+    // красиво показываем дату: "сегодня, 15 сентября" или "завтра, 16 сентября"
+    function fmtDate(iso) {
+      const d = new Date(iso);
+      const now = new Date();
+      const diff = Math.round((new Date(d.toDateString()) - new Date(now.toDateString())) / 864e5); // разница в днях
+      let word = d.getDate() + ' ' + MONTHS[d.getMonth()];
+      if (diff === 0) word = 'сегодня, ' + word;
+      else if (diff === 1) word = 'завтра, ' + word;
+      return word;
+    }
+
+    // При открытии сразу показываем все события из базы: иначе список пуст, если сегодня событий нет.
+    let filter = 'all';
+
+    function eventSymbol(type) {
+      const value = String(type || '').toLowerCase();
+      if (value.includes('лекц') || value.includes('наук')) return '💡';
+      if (value.includes('конц') || value.includes('твор') || value.includes('театр')) return '🎨';
+      if (value.includes('игр') || value.includes('квиз') || value.includes('турнир')) return '🎯';
+      if (value.includes('спорт')) return '⚡';
+      return '📅';
+    }
+
+    // Обложка события использует загруженное изображение, если оно есть; иначе оформляется по типу события.
+    function eventCover(e) {
+      const images = Array.isArray(e.images) ? e.images : [];
+      const photo = (typeof e.image === 'string' && e.image.trim()) ||
+        images.find((src) => typeof src === 'string' && src.trim());
+      const categoryId = Math.min(6, Math.max(1, Number(e.club && e.club.categoryId) || 1));
+      const visual = photo
+        ? `<img class="cover-photo" src="${esc(photo)}" alt="" loading="lazy">`
+        : `<div class="cover-art event-cover-art theme-${categoryId}" aria-hidden="true">
+             <span class="cover-kicker">HSE CLUBS NN · СОБЫТИЕ</span>
+             <span class="cover-symbol">${eventSymbol(e.type)}</span>
+             <span class="cover-caption">${esc(e.type || 'Мероприятие')}</span>
+           </div>`;
+      return `<div class="cover event-cover theme-${categoryId}"><a class="cover-link" href="event.html?id=${e.id}" aria-label="Подробнее о событии">${visual}</a>${starBtn(e.clubId)}</div>`;
+    }
+
+    // Карточка одного события
+    function eventCard(e) {
+      const eventDate = new Date(e.datetime);
+      const time = Number.isNaN(eventDate.getTime()) ? '' : eventDate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', hour12: false });
+      return `
+        <div class="event-card">
+          ${eventCover(e)}
+          <div class="body">
+            <div class="event-meta">
+              <span class="type">${esc(e.type)}</span>
+              <span class="time">${time}</span>
+            </div>
+            <a class="event-title event-title-link" href="event.html?id=${e.id}">${esc(e.title || 'Название события уточняется')}</a>
+            <div class="event-place">${I.pin}<span class="addr">${esc(e.place || 'Место уточняется')}</span></div>
+            <a class="event-club" href="club.html?id=${e.clubId}">
+              <div class="logo"></div><span>${esc(e.club && e.club.name || 'Студенческий клуб')}</span>
+            </a>
+          </div>
+        </div>`;
+    }
+
+    async function renderPage() {
+      const events = await api('/events?filter=' + filter);
+      events.sort((a, b) => new Date(a.datetime) - new Date(b.datetime));
+
+      // подсвечиваем активный фильтр
+      document.querySelectorAll('[data-filter]').forEach((b) => {
+        b.classList.toggle('active', b.dataset.filter === filter);
+      });
+
+      // просто подряд, дата стоит перед каждым событием (как в макете)
+      document.getElementById('events-list').innerHTML = events.map((e) =>
+        `<div class="date-divider">${fmtDate(e.datetime)}</div>` + eventCard(e)
+      ).join('') || '<div style="text-align:center;color:var(--muted);padding:40px 0">Событий пока нет</div>';
+
+      bindCommon();
+    }
+
+    // клики по фильтрам
+    document.querySelectorAll('[data-filter]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        filter = btn.dataset.filter;
+        renderPage();
+      });
+    });
+
+    // старт
+    (async function init() {
+      await loadBase();
+      await renderPage();
+    })();
+  </script>
+</body>
+</html>

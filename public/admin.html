@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>Панель администратора — HSE clubs NN</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/style.css?v=sqlite-users-contacts-20261016">
+</head>
+<body>
+  <div id="app" class="admin-app">
+    <header class="h-blue admin-h">
+      <div class="page-header admin-page-header">
+        <a class="back-btn" href="profile.html" aria-label="Вернуться в профиль"><span class="back-ico"></span></a>
+        <div class="title">Панель админа</div>
+        <span class="role-chip" id="role-chip">Администратор</span>
+      </div>
+      <nav class="admin-tabs" aria-label="Разделы панели администратора">
+        <button data-tab="stats" class="on" type="button">Аналитика</button>
+        <button data-tab="submissions" type="button">Заявки <span id="pending-count" class="tab-count">0</span></button>
+        <button data-tab="clubs" type="button">Клубы</button>
+        <button data-tab="broadcast" type="button">Рассылки</button>
+        <button data-tab="content" type="button">Контакты</button>
+      </nav>
+    </header>
+
+    <section class="admin-section" id="tab-stats">
+      <div class="section">
+        <div class="admin-section-heading"><div class="section-label">Активность пользователей</div><span class="admin-muted" id="activity-range-label">За 7 дней</span></div>
+        <div class="stat-grid admin-stat-grid">
+          <div class="stat-card"><div class="num" id="stat-users">0</div><div class="lbl">Пользователей</div></div>
+          <div class="stat-card"><div class="num" id="stat-active">0</div><div class="lbl">Активных за 7 дней</div></div>
+          <div class="stat-card"><div class="num" id="stat-subs">0</div><div class="lbl">Подписок на клубы</div></div>
+          <div class="stat-card"><div class="num" id="stat-events">0</div><div class="lbl">Событий</div></div>
+        </div>
+        <div class="analytics-filters">
+          <label>Показатель<select id="analytics-metric" class="input"><option value="users">Активные пользователи</option><option value="subscriptions">Действия с подписками</option><option value="submissions">Отправленные заявки</option></select></label>
+          <label>Период<select id="analytics-range" class="input"><option value="7">7 дней</option><option value="14">14 дней</option><option value="30">30 дней</option></select></label>
+        </div>
+        <div id="activity-chart" class="activity-chart" aria-label="График активности пользователей"></div>
+        <div class="chart-legend"><span><i></i><span id="chart-caption">Активность по дням</span></span><small>Данные приложения</small></div>
+      </div>
+      <div class="section">
+        <div class="section-head"><div class="section-label">Заявки на модерацию</div><button class="link-orange" id="go-pending" type="button">Все</button></div>
+        <div class="admin-pending-list" id="stats-submissions"></div>
+      </div>
+      <div class="section">
+        <div class="broadcast-promo">
+          <div><div class="btitle">Создать рассылку</div><p>Расскажите о событии подписчикам клуба или категории.</p><button class="btn btn-orange" id="create-broadcast-shortcut" type="button">Создать рассылку</button></div>
+          <div class="promo-mascot" aria-hidden="true"><img src="/icons/vorona.png" alt=""></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="admin-section" id="tab-submissions" hidden>
+      <div class="section">
+        <div class="section-head"><div class="section-label">Все заявки</div><select class="input admin-filter-select" id="submission-filter"><option value="all">Все статусы</option><option value="pending">На модерации</option><option value="changes">Нужны правки</option><option value="approved">Одобрены</option><option value="rejected">Отклонены</option><option value="published">Опубликованы</option></select></div>
+        <div id="submissions-list"></div>
+      </div>
+    </section>
+
+    <section class="admin-section" id="tab-clubs" hidden>
+      <div class="section">
+        <div class="section-label">Управление клубами</div>
+        <p class="admin-intro">Редактируйте название, описание, категорию и контактные ссылки. Изменения сразу сохраняются в данных проекта.</p>
+        <div id="clubs-list"></div>
+      </div>
+    </section>
+
+    <section class="admin-section" id="tab-broadcast" hidden>
+      <div class="section">
+        <div class="broadcast-card admin-broadcast-form">
+          <div class="btitle">Создать рассылку</div>
+          <div class="broadcast-source-picker">
+            <button class="btn btn-outline" id="broadcast-choose-submission" type="button">Выбрать заявку</button>
+            <div id="broadcast-submission-picker" hidden>
+              <label class="form-label" for="broadcast-submission-select">Одобренные заявки для рассылки</label>
+              <select class="input" id="broadcast-submission-select">
+                <option value="">Выберите заявку</option>
+              </select>
+              <p class="broadcast-picker-empty" id="broadcast-submission-empty" hidden>Нет одобренных заявок, доступных для рассылки.</p>
+            </div>
+          </div>
+          <div class="selected-submission-note" id="selected-submission-note" hidden></div>
+          <label class="form-label" for="broadcast-target">Кому отправить</label>
+          <select class="input" id="broadcast-target">
+            <option value="club">Подписчикам одного клуба</option>
+            <option value="category">Подписчикам категории</option>
+            <option value="clubs">Подписчикам нескольких клубов</option>
+            <option value="all">Всем подписчикам бота</option>
+          </select>
+          <div class="broadcast-field" data-broadcast-field="club"><label class="form-label" for="broadcast-club">Клуб</label><select class="input" id="broadcast-club"></select></div>
+          <div class="broadcast-field" data-broadcast-field="clubs" hidden><label class="form-label" for="broadcast-clubs">Выберите клубы</label><select class="input" id="broadcast-clubs" multiple size="4"></select></div>
+          <div class="broadcast-field" data-broadcast-field="category" hidden><label class="form-label" for="broadcast-category">Категория</label><select class="input" id="broadcast-category"></select></div>
+          <label class="form-label" for="broadcast-text">Текст рассылки</label>
+          <textarea class="textarea" id="broadcast-text" placeholder="Напишите сообщение для подписчиков"></textarea>
+          <label class="form-label" for="broadcast-time">Время отправки (необязательно)</label>
+          <input class="input" id="broadcast-time" type="datetime-local">
+          <div class="preview-box" id="broadcast-preview">Здесь появится предпросмотр сообщения</div>
+          <div class="reach" id="broadcast-reach">Получателей: 0</div>
+          <button class="btn btn-outline" id="broadcast-preview-btn" type="button">Обновить предпросмотр и охват</button>
+          <button class="btn btn-orange" id="broadcast-start" type="button">Подтвердить отправку</button>
+          <button class="btn btn-quiet" id="broadcast-cancel" type="button">Очистить форму</button>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-label">История рассылок</div>
+        <div id="broadcast-history"></div>
+      </div>
+    </section>
+
+    <section class="admin-section" id="tab-content" hidden>
+      <div class="section">
+        <div class="section-label">Ссылки проекта</div>
+        <p class="admin-intro">Эти ссылки хранятся в SQLite и автоматически отображаются в профиле и разделе «О проекте».</p>
+        <div id="site-links-admin"><div class="empty-state">Загрузка ссылок...</div></div>
+        <div class="content-add-form">
+          <div class="section-label">Добавить ссылку</div>
+          <label>Название<input class="input" id="new-link-label" placeholder="Например, сайт университета"></label>
+          <label>Адрес URL<input class="input" id="new-link-url" placeholder="https://example.ru"></label>
+          <label>Где показывать<select class="input" id="new-link-section"><option value="all">Везде</option><option value="profile">Профиль</option><option value="about">О проекте</option></select></label>
+          <button class="btn btn-orange" id="add-site-link" type="button">Добавить ссылку</button>
+        </div>
+      </div>
+      <div class="section">
+        <div class="section-label">Контакты администраторов</div>
+        <p class="admin-intro">Публичные контакты доступны пользователям в профиле и на странице «О проекте». Секретный код администратора здесь не хранится.</p>
+        <div id="admin-contacts-list"><div class="empty-state">Загрузка контактов...</div></div>
+        <div class="content-add-form">
+          <div class="section-label">Добавить контакт</div>
+          <label>Имя/название<input class="input" id="new-contact-name" placeholder="Администратор HSE clubs NN"></label>
+          <label>Роль<input class="input" id="new-contact-role" placeholder="Обратная связь по Mini App"></label>
+          <label>Telegram username<input class="input" id="new-contact-username" placeholder="username без @"></label>
+          <label>Ссылка Telegram (необязательно)<input class="input" id="new-contact-tg-url" placeholder="https://t.me/username"></label>
+          <label>Email (необязательно)<input class="input" id="new-contact-email" type="email" placeholder="admin@example.ru"></label>
+          <label>Телефон (необязательно)<input class="input" id="new-contact-phone" type="tel" placeholder="+7..."></label>
+          <label class="content-check"><input id="new-contact-public" type="checkbox" checked> Показывать пользователям</label>
+          <button class="btn btn-orange" id="add-admin-contact" type="button">Добавить контакт</button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="js/common.js?v=sqlite-users-contacts-20261016"></script>
+  <script>
+    document.querySelector('.back-ico').innerHTML = I.back;
+    let adminData = null;
+    let clubs = [];
+    let categories = [];
+    let selectedSubmissionId = null;
+    let contentSettings = { siteLinks: [], adminContacts: [] };
+
+    function showTab(name) {
+      document.querySelectorAll('.admin-section').forEach(section => { section.hidden = section.id !== 'tab-' + name; });
+      document.querySelectorAll('[data-tab]').forEach(button => button.classList.toggle('on', button.dataset.tab === name));
+      if (name === 'broadcast') updateReach();
+      if (name === 'content') renderContentSettings().catch(error => toast(error.message));
+    }
+    document.querySelectorAll('[data-tab]').forEach(button => button.addEventListener('click', () => showTab(button.dataset.tab)));
+    document.getElementById('go-pending').addEventListener('click', () => showTab('submissions'));
+    document.getElementById('create-broadcast-shortcut').addEventListener('click', () => showTab('broadcast'));
+
+    const typeNames = { event: 'Анонс события', club: 'Новый клуб', fix: 'Изменение карточки клуба', feedback: 'Обращение' };
+    const statusNames = { pending: 'На модерации', changes: 'Нужны правки', approved: 'Одобрена', rejected: 'Отклонена', published: 'Опубликована', draft: 'Черновик', cancelled: 'Отменена' };
+    function parseDetails(s) {
+      try { const parsed = JSON.parse(s.details || '{}'); return parsed && typeof parsed === 'object' ? parsed : { text: String(s.details || '') }; }
+      catch (_) { return { text: String(s.details || '') }; }
+    }
+    function detailsText(s) {
+      const details = parseDetails(s);
+      return Object.entries(details).filter(([key,value]) => value != null && value !== '' && typeof value !== 'object').map(([key,value]) => `${key}: ${value}`).join('\n') || String(s.details || 'Подробности не указаны');
+    }
+    // Для рассылки подходят анонсы событий и запросы на изменение карточки клуба.
+    // Заявки на добавление нового клуба и личные обращения сюда не попадают.
+    function isBroadcastEligibleSubmission(submission) {
+      return Boolean(submission) && ['event', 'fix'].includes(String(submission.type || '').toLowerCase());
+    }
+
+    function submissionCard(s) {
+      const details = parseDetails(s);
+      const eventDate = [details.date, details.time].filter(Boolean).join(' ') || 'Не указана';
+      const clubId = Number(s.clubId || details.clubId) || 0;
+      const categoryId = Number(s.categoryId || details.categoryId) || 0;
+      const optionsClubs = clubs.map(c => `<option value="${c.id}" ${clubId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+      const optionsCategories = categories.map(c => `<option value="${c.id}" ${categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
+      const pendingClass = ['pending','changes'].includes(s.status) ? ' mod-card-pending' : '';
+      return `<article class="mod-card${pendingClass}" data-submission-card="${s.id}">
+        <div class="mod-card-top"><div><b>Заявка №${s.id}</b><span class="mod-type">${esc(typeNames[s.type] || s.type)}</span></div><span class="status-pill status-${esc(s.status)}">${esc(statusNames[s.status] || s.status)}</span></div>
+        <div class="mod-title">${esc(s.title || 'Без названия')}</div>
+        <div class="mod-meta">Отправитель: ${esc(s.userName || 'Студент')}${s.username ? ' · @' + esc(s.username) : ''}</div>
+        <div class="mod-meta">Дата события: ${esc(eventDate)} · Создана: ${new Date(s.createdAt).toLocaleDateString('ru-RU')}</div>
+        <label class="submission-comment-label" for="submission-comment-${s.id}">Комментарий автору</label>
+        <textarea class="textarea submission-comment" id="submission-comment-${s.id}" data-comment="${s.id}" rows="2" placeholder="Напишите, что нужно исправить или поясните решение">${esc(s.adminComment || '')}</textarea>
+        <div class="admin-form-grid"><label>Связанный клуб<select class="input" data-club="${s.id}"><option value="">Не выбран</option>${optionsClubs}</select></label><label>Категория<select class="input" data-category="${s.id}"><option value="">Не выбрана</option>${optionsCategories}</select></label></div>
+        <details class="submission-details"><summary>Данные заявки</summary><pre>${esc(detailsText(s))}</pre></details>
+        <div class="actions admin-actions">
+          <button class="action-secondary" data-view="${s.id}" type="button">Материалы</button>
+          <button class="action-secondary" data-save-comment="${s.id}" type="button">Отправить комментарий</button>
+          ${!['approved', 'published'].includes(s.status) && isBroadcastEligibleSubmission(s) ? `<button class="action-approve" data-approve-and-broadcast="${s.id}" type="button">Одобрить и перейти к рассылке</button>` : ''}
+          ${!['approved', 'published'].includes(s.status) && !isBroadcastEligibleSubmission(s) ? `<button class="action-approve" data-approve="${s.id}" type="button">Одобрить</button>` : ''}
+          <button class="action-secondary" data-changes="${s.id}" type="button">Доработать</button>
+          <button class="action-danger" data-reject="${s.id}" type="button">Отклонить</button>
+          ${s.status === 'approved' && isBroadcastEligibleSubmission(s) ? `<button class="action-approve" data-broadcast-submission="${s.id}" type="button">В рассылку</button>` : ''}
+          <button class="action-secondary" data-edit="${s.id}" type="button">Редактировать</button>
+        </div>
+      </article>`;
+    }
+
+    function submissionCardFor(button) {
+      return button.closest('[data-submission-card]');
+    }
+
+    function cardComment(card) {
+      return card ? String(card.querySelector('[data-comment]')?.value || '').trim() : '';
+    }
+
+    async function setStatus(id, status, comment, sourceButton) {
+      const card = sourceButton ? submissionCardFor(sourceButton) : document.querySelector(`[data-submission-card="${id}"]`);
+      const clubId = card ? card.querySelector('[data-club]').value : '';
+      const categoryId = card ? card.querySelector('[data-category]').value : '';
+      const feedback = String(comment || '').trim();
+      if (status === 'changes' && !feedback) {
+        toast('Напишите комментарий: что именно нужно доработать');
+        card?.querySelector('[data-comment]')?.focus();
+        return;
+      }
+      if (status === 'rejected' && !feedback && !confirm('Отклонить заявку без комментария автору?')) return;
+
+      await api('/admin/submissions/' + id + '/status', {
+        method: 'POST',
+        body: JSON.stringify({ status, comment: feedback, clubId, categoryId })
+      });
+      const messages = {
+        approved: 'Заявка одобрена. Теперь её можно отдельно отправить в рассылку.',
+        changes: 'Заявка отправлена на доработку. Автор получит комментарий.',
+        rejected: 'Заявка отклонена. Автор получит обратную связь.',
+        pending: 'Заявка возвращена на модерацию.'
+      };
+      toast(messages[status] || 'Статус заявки изменён');
+      await renderPage();
+    }
+
+    async function prepareSubmissionBroadcast(id, button) {
+      const submission = adminData.submissions.find(item => item.id === Number(id));
+      if (!submission) return;
+      if (submission.status !== 'approved') {
+        toast('Сначала одобрите заявку');
+        return;
+      }
+      if (!isBroadcastEligibleSubmission(submission)) {
+        toast('В рассылку можно передавать только анонсы событий и заявки на изменение карточки клуба.');
+        return;
+      }
+      selectedSubmissionId = Number(id);
+      const picker = document.getElementById('broadcast-submission-picker');
+      picker.hidden = false;
+      document.getElementById('broadcast-submission-select').value = String(id);
+      showTab('broadcast');
+      document.getElementById('broadcast-text').value = `${submission.title}\n\n${detailsText(submission)}`;
+      const clubId = Number(submission.clubId || parseDetails(submission).clubId) || 0;
+      const categoryId = Number(submission.categoryId || parseDetails(submission).categoryId) || 0;
+      document.getElementById('broadcast-target').value = clubId ? 'club' : (categoryId ? 'category' : 'all');
+      if (clubId) document.getElementById('broadcast-club').value = String(clubId);
+      if (categoryId) document.getElementById('broadcast-category').value = String(categoryId);
+      const note = document.getElementById('selected-submission-note');
+      note.hidden = false;
+      note.textContent = `В рассылку выбрана заявка №${submission.id}: ${submission.title}. Перед отправкой проверьте аудиторию и текст.`;
+      refreshBroadcastFields();
+      document.getElementById('broadcast-preview').textContent = document.getElementById('broadcast-text').value;
+      await updateReach();
+    }
+
+    function bindSubmissionButtons() {
+      document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => {
+        const submission = adminData.submissions.find(item => item.id === Number(button.dataset.view));
+        if (!submission) return;
+        let media = []; try { media = JSON.parse(submission.media || '[]'); } catch (_) {}
+        const images = Array.isArray(media) ? media.filter(file => file && file.data && String(file.type || '').startsWith('image/')) : [];
+        images.forEach(file => window.open(file.data, '_blank', 'noopener'));
+        alert(`${submission.title}\n\n${detailsText(submission)}${images.length ? `\n\nОткрыто изображений: ${images.length}` : '\n\nВложенных изображений нет'}`);
+      }));
+      document.querySelectorAll('[data-save-comment]').forEach(button => button.addEventListener('click', async () => {
+        const card = submissionCardFor(button);
+        const comment = cardComment(card);
+        if (!comment) { toast('Сначала напишите комментарий автору'); card?.querySelector('[data-comment]')?.focus(); return; }
+        button.disabled = true;
+        try {
+          await api('/admin/submissions/' + button.dataset.saveComment + '/comment', { method: 'POST', body: JSON.stringify({ comment }) });
+          toast('Комментарий сохранён и отправлен автору');
+          await renderPage();
+        } catch (e) { toast(e.message); }
+        finally { button.disabled = false; }
+      }));
+      document.querySelectorAll('[data-approve]').forEach(button => button.addEventListener('click', () => setStatus(button.dataset.approve, 'approved', cardComment(submissionCardFor(button)), button).catch(e => toast(e.message))));
+      document.querySelectorAll('[data-approve-and-broadcast]').forEach(button => button.addEventListener('click', async () => {
+        const id = Number(button.dataset.approveAndBroadcast);
+        try {
+          await setStatus(id, 'approved', cardComment(submissionCardFor(button)), button);
+          await prepareSubmissionBroadcast(id);
+        } catch (e) { toast(e.message); }
+      }));
+      document.querySelectorAll('[data-changes]').forEach(button => button.addEventListener('click', () => setStatus(button.dataset.changes, 'changes', cardComment(submissionCardFor(button)), button).catch(e => toast(e.message))));
+      document.querySelectorAll('[data-reject]').forEach(button => button.addEventListener('click', () => setStatus(button.dataset.reject, 'rejected', cardComment(submissionCardFor(button)), button).catch(e => toast(e.message))));
+      document.querySelectorAll('[data-broadcast-submission]').forEach(button => button.addEventListener('click', () => prepareSubmissionBroadcast(button.dataset.broadcastSubmission, button).catch(e => toast(e.message))));
+      document.querySelectorAll('[data-edit]').forEach(button => button.addEventListener('click', async () => {
+        const item = adminData.submissions.find(s => s.id === Number(button.dataset.edit)); if (!item) return;
+        const title = prompt('Название заявки', item.title); if (title === null || !title.trim()) return;
+        const details = prompt('Описание / данные заявки', item.details || ''); if (details === null) return;
+        try { await api('/admin/submissions/' + item.id + '/edit', { method: 'POST', body: JSON.stringify({ title, details }) }); await renderPage(); toast('Заявка изменена'); }
+        catch (e) { toast(e.message); }
+      }));
+    }
+
+    function renderClubs() {
+      const list = document.getElementById('clubs-list');
+      if (!clubs.length) { list.innerHTML = '<div class="empty-state">Клубов пока нет.</div>'; return; }
+      list.innerHTML = clubs.map(club => `<article class="club-manage-card" data-club-card="${club.id}">
+        <div class="club-manage-head"><span class="club-manage-icon">${esc((club.name || 'К').trim().slice(0,1).toUpperCase())}</span><div><b>${esc(club.name)}</b><small>${esc(club.categoryName || 'Без категории')}</small></div><a href="club.html?id=${club.id}" class="club-open-link">Открыть ↗</a></div>
+        <label>Название<input class="input" data-club-field="name" value="${esc(club.name)}"></label>
+        <label>Короткое описание<input class="input" data-club-field="short" value="${esc(club.short || '')}"></label>
+        <label>Полное описание<textarea class="textarea" data-club-field="description" rows="3">${esc(club.description || '')}</textarea></label>
+        <label>Категория<select class="input" data-club-field="categoryId">${categories.map(cat => `<option value="${cat.id}" ${cat.id === club.categoryId ? 'selected' : ''}>${esc(cat.name)}</option>`).join('')}</select></label>
+        <div class="admin-form-grid"><label>Канал<input class="input" data-club-field="channel" value="${esc(club.channel || '')}"></label><label>Контакты<input class="input" data-club-field="contacts" value="${esc(club.contacts || '')}"></label></div>
+        <button class="btn btn-blue" data-club-save="${club.id}" type="button">Сохранить изменения</button>
+      </article>`).join('');
+      list.querySelectorAll('[data-club-save]').forEach(button => button.addEventListener('click', async () => {
+        const card = button.closest('[data-club-card]');
+        const payload = {};
+        card.querySelectorAll('[data-club-field]').forEach(input => { payload[input.dataset.clubField] = input.value; });
+        payload.categoryId = Number(payload.categoryId);
+        button.disabled = true;
+        try {
+          await api('/admin/clubs/' + button.dataset.clubSave, { method: 'POST', body: JSON.stringify(payload) });
+          toast('Данные клуба сохранены');
+          await renderPage();
+          showTab('clubs');
+        } catch (e) { toast(e.message); }
+        finally { button.disabled = false; }
+      }));
+    }
+
+    function renderContentSettingsUI(data) {
+      if (data) contentSettings = data;
+      const linksBox = document.getElementById('site-links-admin');
+      const contactsBox = document.getElementById('admin-contacts-list');
+      linksBox.innerHTML = (contentSettings.siteLinks || []).map(link => `
+        <article class="content-setting-card" data-link-card="${link.id}">
+          <div class="content-setting-head"><b>${esc(link.label)}</b><span class="admin-muted">ID ${link.id}</span></div>
+          <label>Название<input class="input" data-link-field="label" value="${esc(link.label)}"></label>
+          <label>URL<input class="input" data-link-field="url" value="${esc(link.url)}"></label>
+          <div class="admin-form-grid"><label>Раздел<select class="input" data-link-field="section"><option value="all" ${link.section==='all'?'selected':''}>Везде</option><option value="profile" ${link.section==='profile'?'selected':''}>Профиль</option><option value="about" ${link.section==='about'?'selected':''}>О проекте</option></select></label><label>Порядок<input class="input" data-link-field="sortOrder" type="number" value="${Number(link.sortOrder)||100}"></label></div>
+          <label class="content-check"><input data-link-field="isActive" type="checkbox" ${link.isActive?'checked':''}> Показывать пользователям</label>
+          <button class="btn btn-outline" type="button" data-save-site-link="${link.id}">Сохранить ссылку</button>
+        </article>`).join('') || '<div class="empty-state">Ссылок нет.</div>';
+      contactsBox.innerHTML = (contentSettings.adminContacts || []).map(contact => `
+        <article class="content-setting-card" data-contact-card="${contact.id}">
+          <div class="content-setting-head"><b>${esc(contact.name)}</b><span class="admin-muted">ID ${contact.id}</span></div>
+          <label>Имя/название<input class="input" data-contact-field="name" value="${esc(contact.name)}"></label>
+          <label>Роль<input class="input" data-contact-field="roleTitle" value="${esc(contact.roleTitle)}"></label>
+          <label>Telegram username<input class="input" data-contact-field="telegramUsername" value="${esc(contact.telegramUsername)}" placeholder="без @"></label>
+          <label>Telegram URL<input class="input" data-contact-field="telegramUrl" value="${esc(contact.telegramUrl)}"></label>
+          <label>Email<input class="input" data-contact-field="email" type="email" value="${esc(contact.email)}"></label>
+          <label>Телефон<input class="input" data-contact-field="phone" value="${esc(contact.phone)}"></label>
+          <label class="content-check"><input data-contact-field="visiblePublic" type="checkbox" ${contact.visiblePublic?'checked':''}> Показывать пользователям</label>
+          <label class="content-check"><input data-contact-field="isPrimary" type="checkbox" ${contact.isPrimary?'checked':''}> Основной контакт для кнопки обратной связи</label>
+          <label class="content-check"><input data-contact-field="isActive" type="checkbox" ${contact.isActive?'checked':''}> Активен</label>
+          <div class="admin-form-grid"><label>Порядок<input class="input" data-contact-field="sortOrder" type="number" value="${Number(contact.sortOrder)||100}"></label><span></span></div>
+          <button class="btn btn-outline" type="button" data-save-admin-contact="${contact.id}">Сохранить контакт</button>
+        </article>`).join('') || '<div class="empty-state">Контактов администрации нет.</div>';
+      bindContentSettings();
+    }
+
+    async function renderContentSettings() {
+      const data = await api('/admin/content-settings');
+      renderContentSettingsUI(data);
+    }
+
+    function bindContentSettings() {
+      document.querySelectorAll('[data-save-site-link]').forEach(button => button.addEventListener('click', async () => {
+        const card = button.closest('[data-link-card]');
+        const value = name => card.querySelector(`[data-link-field="${name}"]`);
+        const payload = { label: value('label').value.trim(), url: value('url').value.trim(), section: value('section').value,
+          sortOrder: Number(value('sortOrder').value)||100, isActive: value('isActive').checked };
+        try { await api('/admin/site-links/' + button.dataset.saveSiteLink, { method: 'PUT', body: JSON.stringify(payload) }); toast('Ссылка сохранена'); await renderContentSettings(); }
+        catch (error) { toast(error.message); }
+      }));
+      document.querySelectorAll('[data-save-admin-contact]').forEach(button => button.addEventListener('click', async () => {
+        const card = button.closest('[data-contact-card]');
+        const value = name => card.querySelector(`[data-contact-field="${name}"]`);
+        const payload = { name: value('name').value.trim(), roleTitle: value('roleTitle').value.trim(),
+          telegramUsername: value('telegramUsername').value.trim(), telegramUrl: value('telegramUrl').value.trim(),
+          email: value('email').value.trim(), phone: value('phone').value.trim(), visiblePublic: value('visiblePublic').checked,
+          isPrimary: value('isPrimary').checked, isActive: value('isActive').checked, sortOrder: Number(value('sortOrder').value)||100 };
+        try { await api('/admin/contacts/' + button.dataset.saveAdminContact, { method: 'PUT', body: JSON.stringify(payload) }); toast('Контакт сохранён'); await renderContentSettings(); }
+        catch (error) { toast(error.message); }
+      }));
+    }
+
+    document.getElementById('add-site-link').addEventListener('click', async () => {
+      const label = document.getElementById('new-link-label').value.trim();
+      const url = document.getElementById('new-link-url').value.trim();
+      const section = document.getElementById('new-link-section').value;
+      try {
+        await api('/admin/site-links', { method: 'POST', body: JSON.stringify({ label, url, section, isActive: true }) });
+        document.getElementById('new-link-label').value = ''; document.getElementById('new-link-url').value = '';
+        toast('Ссылка добавлена'); await renderContentSettings();
+      } catch (error) { toast(error.message); }
+    });
+    document.getElementById('add-admin-contact').addEventListener('click', async () => {
+      const payload = { name: document.getElementById('new-contact-name').value.trim(),
+        roleTitle: document.getElementById('new-contact-role').value.trim(),
+        telegramUsername: document.getElementById('new-contact-username').value.trim(),
+        telegramUrl: document.getElementById('new-contact-tg-url').value.trim(), email: document.getElementById('new-contact-email').value.trim(),
+        phone: document.getElementById('new-contact-phone').value.trim(), visiblePublic: document.getElementById('new-contact-public').checked, isActive: true };
+      try {
+        await api('/admin/contacts', { method: 'POST', body: JSON.stringify(payload) });
+        ['new-contact-name','new-contact-role','new-contact-username','new-contact-tg-url','new-contact-email','new-contact-phone'].forEach(id => document.getElementById(id).value = '');
+        toast('Контакт добавлен'); await renderContentSettings();
+      } catch (error) { toast(error.message); }
+    });
+
+    function renderActivityChart() {
+      if (!adminData) return;
+      const range = Number(document.getElementById('analytics-range').value) || 7;
+      const metric = document.getElementById('analytics-metric').value;
+      const data = (adminData.activityByDay || []).slice(-range);
+      const max = Math.max(1, ...data.map(day => Number(day[metric]) || 0));
+      const chart = document.getElementById('activity-chart');
+      chart.innerHTML = data.map((day, index) => {
+        const value = Number(day[metric]) || 0;
+        const height = Math.max(4, Math.round((value / max) * 118));
+        const showLabel = range <= 7 || index === 0 || index === data.length - 1 || index % Math.ceil(range / 6) === 0;
+        const label = day.date.slice(8,10) + '.' + day.date.slice(5,7);
+        return `<div class="chart-column" title="${esc(label)}: ${value}"><div class="chart-bar-wrap"><div class="chart-bar${value ? ' has-value' : ''}" style="height:${height}px"></div></div><small>${showLabel ? esc(label) : ''}</small></div>`;
+      }).join('');
+      const captions = { users: 'Активные пользователи по дням', subscriptions: 'Действия с подписками по дням', submissions: 'Отправленные заявки по дням' };
+      document.getElementById('chart-caption').textContent = captions[metric];
+      document.getElementById('activity-range-label').textContent = `За ${range} ${range === 7 ? 'дней' : 'дней'}`;
+    }
+
+    async function loadBroadcastData() {
+      clubs = await api('/clubs');
+      categories = await api('/categories');
+      document.getElementById('broadcast-club').innerHTML = clubs.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+      document.getElementById('broadcast-clubs').innerHTML = clubs.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+      document.getElementById('broadcast-category').innerHTML = categories.map(c => `<option value="${c.id}">${esc(c.name)}</option>`).join('');
+      refreshBroadcastFields();
+    }
+    function renderApprovedSubmissionPicker() {
+      const select = document.getElementById('broadcast-submission-select');
+      const empty = document.getElementById('broadcast-submission-empty');
+      if (!select || !adminData) return;
+      const previous = String(selectedSubmissionId || select.value || '');
+      const approved = (adminData.submissions || [])
+        .filter(s => s.status === 'approved' && isBroadcastEligibleSubmission(s))
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      select.innerHTML = '<option value="">Выберите одобренную заявку</option>' + approved.map(s =>
+        `<option value="${s.id}">№${s.id} — ${esc(s.title || 'Без названия')} · ${new Date(s.createdAt).toLocaleDateString('ru-RU')}</option>`
+      ).join('');
+      select.value = approved.some(s => String(s.id) === previous) ? previous : '';
+      empty.hidden = approved.length > 0;
+    }
+
+    function refreshBroadcastFields() {
+      const target = document.getElementById('broadcast-target').value;
+      document.querySelectorAll('[data-broadcast-field]').forEach(field => { field.hidden = field.dataset.broadcastField !== target; });
+    }
+    function broadcastData() {
+      return {
+        target: document.getElementById('broadcast-target').value,
+        clubId: document.getElementById('broadcast-club').value,
+        clubIds: Array.from(document.getElementById('broadcast-clubs').selectedOptions).map(option => Number(option.value)),
+        categoryId: document.getElementById('broadcast-category').value
+      };
+    }
+    async function updateReach() {
+      try {
+        const result = await api('/admin/broadcast/preview', { method: 'POST', body: JSON.stringify(broadcastData()) });
+        document.getElementById('broadcast-reach').textContent = 'Получателей: ' + result.reached;
+      } catch (e) { document.getElementById('broadcast-reach').textContent = e.message; }
+    }
+    async function renderBroadcastHistory() {
+      const tasks = await api('/admin/broadcasts');
+      const names = { queued: 'В очереди', sending: 'Отправляется', done: 'Завершена' };
+      document.getElementById('broadcast-history').innerHTML = tasks.slice().reverse().map(task => `<article class="broadcast-history-card">
+        <div class="mod-card-top"><b>Рассылка №${task.id}</b><span class="status-pill status-${esc(task.status)}">${esc(names[task.status] || task.status)}</span></div>
+        <p>${esc(task.text || '')}</p><div class="mod-meta">Запланирована: ${new Date(task.sendAt).toLocaleString('ru-RU')}</div>
+        <div class="mod-meta">Получателей: ${(task.recipients || []).length} · Отправлено: ${task.sent || 0} · Ошибок: ${task.failed || 0}</div>
+      </article>`).join('') || '<div class="empty-state">Рассылок пока нет.</div>';
+    }
+
+    async function renderPage() {
+      adminData = await api('/admin/overview');
+      clubs = adminData.clubs || clubs;
+      categories = adminData.categories || categories;
+      document.getElementById('stat-users').textContent = adminData.activity.users;
+      document.getElementById('stat-active').textContent = adminData.activity.activeUsers;
+      document.getElementById('stat-subs').textContent = adminData.activity.subscriptions;
+      document.getElementById('stat-events').textContent = adminData.activity.events;
+      document.getElementById('pending-count').textContent = adminData.pendingSubmissions.length;
+      renderApprovedSubmissionPicker();
+      const filter = document.getElementById('submission-filter').value;
+      const filtered = filter === 'all' ? adminData.submissions : adminData.submissions.filter(s => s.status === filter);
+      document.getElementById('submissions-list').innerHTML = filtered.map(submissionCard).join('') || '<div class="empty-state">Заявок с таким статусом нет.</div>';
+      document.getElementById('stats-submissions').innerHTML = adminData.pendingSubmissions.slice(0,3).map(submissionCard).join('') || '<div class="empty-state">Новых заявок на модерацию нет.</div>';
+      bindSubmissionButtons();
+      renderClubs();
+      renderActivityChart();
+      await renderBroadcastHistory();
+    }
+
+    document.getElementById('submission-filter').addEventListener('change', () => {
+      if (adminData) {
+        const filter = document.getElementById('submission-filter').value;
+        const filtered = filter === 'all' ? adminData.submissions : adminData.submissions.filter(s => s.status === filter);
+        document.getElementById('submissions-list').innerHTML = filtered.map(submissionCard).join('') || '<div class="empty-state">Заявок с таким статусом нет.</div>';
+        bindSubmissionButtons();
+      }
+    });
+    document.getElementById('analytics-metric').addEventListener('change', renderActivityChart);
+    document.getElementById('analytics-range').addEventListener('change', renderActivityChart);
+    document.getElementById('broadcast-choose-submission').addEventListener('click', () => {
+      const picker = document.getElementById('broadcast-submission-picker');
+      picker.hidden = !picker.hidden;
+      if (!picker.hidden) {
+        renderApprovedSubmissionPicker();
+        document.getElementById('broadcast-submission-select').focus();
+      }
+    });
+    document.getElementById('broadcast-submission-select').addEventListener('change', () => {
+      const id = Number(document.getElementById('broadcast-submission-select').value);
+      if (!id) {
+        selectedSubmissionId = null;
+        const note = document.getElementById('selected-submission-note');
+        note.hidden = true;
+        note.textContent = '';
+        return;
+      }
+      prepareSubmissionBroadcast(id).catch(e => toast(e.message));
+    });
+    document.getElementById('broadcast-target').addEventListener('change', () => { refreshBroadcastFields(); updateReach(); });
+    ['broadcast-club','broadcast-clubs','broadcast-category'].forEach(id => document.getElementById(id).addEventListener('change', updateReach));
+    document.getElementById('broadcast-preview-btn').addEventListener('click', async () => {
+      const text = document.getElementById('broadcast-text').value.trim();
+      document.getElementById('broadcast-preview').textContent = text || 'Введите текст сообщения';
+      await updateReach();
+    });
+    document.getElementById('broadcast-cancel').addEventListener('click', () => {
+      document.getElementById('broadcast-text').value = '';
+      document.getElementById('broadcast-time').value = '';
+      document.getElementById('broadcast-preview').textContent = 'Здесь появится предпросмотр сообщения';
+      document.getElementById('selected-submission-note').hidden = true;
+      document.getElementById('selected-submission-note').textContent = '';
+      selectedSubmissionId = null;
+      document.getElementById('broadcast-submission-select').value = '';
+    });
+    document.getElementById('broadcast-start').addEventListener('click', async () => {
+      const text = document.getElementById('broadcast-text').value.trim();
+      if (!text) { toast('Введите текст рассылки'); return; }
+      await updateReach();
+      const countText = document.getElementById('broadcast-reach').textContent;
+      if (!confirm('Подтвердить создание рассылки?\n' + countText + '\n\n' + text)) return;
+      try {
+        const data = broadcastData();
+        data.title = text;
+        const sendTime = document.getElementById('broadcast-time').value;
+        data.sendAt = sendTime ? new Date(sendTime).toISOString() : '';
+        data.submissionId = selectedSubmissionId;
+        const result = await api('/admin/broadcast', { method: 'POST', body: JSON.stringify(data) });
+        toast('Рассылка добавлена в очередь. Получателей: ' + result.reached);
+        document.getElementById('broadcast-text').value = '';
+        document.getElementById('broadcast-time').value = '';
+        document.getElementById('broadcast-preview').textContent = 'Рассылка создана и добавлена в очередь';
+        document.getElementById('selected-submission-note').hidden = true;
+        document.getElementById('selected-submission-note').textContent = '';
+        selectedSubmissionId = null;
+        document.getElementById('broadcast-submission-select').value = '';
+        await renderBroadcastHistory();
+        await renderPage();
+        showTab('broadcast');
+      } catch (e) { toast(e.message); }
+    });
+
+    (async function init() {
+      try {
+        await loadBase();
+        await loadBroadcastData();
+        await renderPage();
+        await renderContentSettings();
+      } catch (error) {
+        document.getElementById('app').innerHTML = `<div class="empty-state admin-denied"><h2>Нет доступа</h2><p>${esc(error.message || 'Панель доступна только администраторам')}</p><a class="btn btn-blue" href="profile.html">Вернуться в профиль</a></div>`;
+      }
+    })();
+  </script>
+</body>
+</html>

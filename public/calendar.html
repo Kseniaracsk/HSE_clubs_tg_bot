@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <title>Календарь событий — HSE clubs NN</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="css/style.css?v=hse-full-update-20261013">
+</head>
+<body data-page="events">
+  <div id="app">
+    <div class="page-header calendar-page-header">
+      <a class="back-btn" href="events.html" aria-label="Назад к событиям"><span class="back-ico"></span></a>
+      <div><div class="title">Календарь</div><div class="calendar-subtitle">События клубов HSE</div></div>
+    </div>
+
+    <section class="calendar-shell">
+      <div class="calendar-topbar">
+        <button id="month-prev" class="calendar-nav" type="button" aria-label="Предыдущий месяц">‹</button>
+        <h2 id="month-label">Октябрь 2026</h2>
+        <button id="month-next" class="calendar-nav" type="button" aria-label="Следующий месяц">›</button>
+      </div>
+      <div class="calendar-weekdays"><span>Пн</span><span>Вт</span><span>Ср</span><span>Чт</span><span>Пт</span><span>Сб</span><span>Вс</span></div>
+      <div class="calendar-grid" id="calendar-grid"></div>
+      <div class="calendar-legend"><span><i class="legend-dot"></i>Есть события</span><label for="calendar-filter">Показывать</label><select id="calendar-filter"><option value="all">Все события</option><option value="my">Мои клубы</option></select></div>
+    </section>
+
+    <section class="calendar-results">
+      <div class="calendar-results-head">
+        <div><div class="section-label">Расписание</div><h2 id="selection-title">Ближайшие события</h2></div>
+        <button class="week-toggle" id="week-toggle" type="button">Показать неделю</button>
+      </div>
+      <div class="calendar-result-caption" id="selection-caption"></div>
+      <div id="calendar-events" class="calendar-events-list"><div class="loading-card">Загружаем события…</div></div>
+    </section>
+  </div>
+
+  <nav class="bottom-nav">
+    <button class="nav-item" data-page="home"><span class="nav-icon" data-ico="home"></span><span class="nav-label">Главная</span></button>
+    <button class="nav-item" data-page="catalog"><span class="nav-icon" data-ico="lupa"></span><span class="nav-label">Каталог</span></button>
+    <button class="nav-item" data-page="events"><span class="nav-icon" data-ico="rupor"></span><span class="nav-label">События</span></button>
+    <button class="nav-item" data-page="subs"><span class="nav-icon" data-ico="star"></span><span class="nav-label">Подписки</span></button>
+    <button class="nav-item" data-page="profile"><span class="nav-icon" data-ico="profile"></span><span class="nav-label">Профиль</span></button>
+  </nav>
+
+  <script src="js/common.js?v=hse-full-update-20261013"></script>
+  <script>
+    document.querySelector('.back-ico').innerHTML = I.back;
+    const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+    let allEvents = [];
+    let monthCursor = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    let selectedDate = new Date();
+    selectedDate.setHours(0,0,0,0);
+    let viewMode = 'day';
+    const toKey = date => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+    const parseKey = key => { const [y,m,d] = key.split('-').map(Number); return new Date(y, m-1, d); };
+    const fmtDay = date => date.toLocaleDateString('ru-RU', { day:'numeric', month:'long' });
+    const filteredEvents = () => {
+      if (document.getElementById('calendar-filter').value === 'my') return allEvents.filter(e => state.clubSubs.includes(Number(e.clubId)));
+      return allEvents;
+    };
+    const eventsOn = key => filteredEvents().filter(e => toKey(new Date(e.datetime)) === key);
+    const categoryIdFor = e => Number(e.club && e.club.categoryId) || 1;
+
+    function renderCalendar() {
+      document.getElementById('month-label').textContent = `${monthNames[monthCursor.getMonth()]} ${monthCursor.getFullYear()}`;
+      const first = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1);
+      const mondayOffset = (first.getDay() + 6) % 7;
+      const gridStart = new Date(first);
+      gridStart.setDate(first.getDate() - mondayOffset);
+      const events = filteredEvents();
+      const counts = new Map();
+      events.forEach(event => {
+        const key = toKey(new Date(event.datetime));
+        if (!counts.has(key)) counts.set(key, []);
+        counts.get(key).push(event);
+      });
+      const cells = [];
+      for (let i=0;i<42;i++) {
+        const day = new Date(gridStart); day.setDate(gridStart.getDate()+i);
+        const key = toKey(day);
+        const dayEvents = counts.get(key) || [];
+        const classes = ['calendar-day'];
+        if (day.getMonth() !== monthCursor.getMonth()) classes.push('outside-month');
+        if (key === toKey(selectedDate)) classes.push('selected');
+        if (key === toKey(new Date())) classes.push('today');
+        if (dayEvents.length) classes.push('has-events');
+        const dots = dayEvents.slice(0,3).map(e => `<i class="event-dot cat-${categoryIdFor(e)}"></i>`).join('');
+        cells.push(`<button class="${classes.join(' ')}" type="button" data-date="${key}" aria-label="${key}${dayEvents.length ? ', событий: '+dayEvents.length : ''}"><span class="calendar-day-number">${day.getDate()}</span>${dayEvents.length ? `<span class="calendar-day-dots">${dots}</span>` : '<span class="calendar-day-dots empty"></span>'}</button>`);
+      }
+      document.getElementById('calendar-grid').innerHTML = cells.join('');
+      document.querySelectorAll('[data-date]').forEach(button => button.addEventListener('click', () => {
+        selectedDate = parseKey(button.dataset.date);
+        if (selectedDate.getMonth() !== monthCursor.getMonth()) monthCursor = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+        viewMode = 'day';
+        renderCalendar(); renderResults();
+      }));
+    }
+
+    function eventRow(event) {
+      const date = new Date(event.datetime);
+      const day = Number.isNaN(date.getTime()) ? 'Дата уточняется' : date.toLocaleDateString('ru-RU', { weekday:'short', day:'numeric', month:'short' });
+      const time = Number.isNaN(date.getTime()) ? '' : date.toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' });
+      return `<a class="calendar-event-row" href="event.html?id=${event.id}">
+        <span class="calendar-event-date cat-bg-${categoryIdFor(event)}"><b>${esc(day)}</b><small>${esc(time)}</small></span>
+        <span class="calendar-event-content"><b>${esc(event.title || 'Событие')}</b><small>${esc(event.club && event.club.name || 'Клуб')} · ${esc(event.place || 'Место уточняется')}</small></span>
+        <span class="chev">${I.chev}</span>
+      </a>`;
+    }
+
+    function renderResults() {
+      const key = toKey(selectedDate);
+      const dayEvents = eventsOn(key).sort((a,b)=>new Date(a.datetime)-new Date(b.datetime));
+      const weekStart = new Date(selectedDate);
+      weekStart.setDate(selectedDate.getDate() - ((selectedDate.getDay()+6)%7));
+      const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+7);
+      const weekEvents = filteredEvents().filter(e => { const d = new Date(e.datetime); return d >= weekStart && d < weekEnd; }).sort((a,b)=>new Date(a.datetime)-new Date(b.datetime));
+      let items, caption;
+      if (viewMode === 'week') {
+        items = weekEvents;
+        const sunday = new Date(weekEnd); sunday.setDate(weekEnd.getDate()-1);
+        document.getElementById('selection-title').textContent = 'События недели';
+        caption = `${fmtDay(weekStart)} — ${fmtDay(sunday)}`;
+      } else {
+        items = dayEvents;
+        document.getElementById('selection-title').textContent = fmtDay(selectedDate);
+        caption = dayEvents.length ? `${dayEvents.length} ${dayEvents.length === 1 ? 'событие' : dayEvents.length < 5 ? 'события' : 'событий'} на выбранную дату` : 'На выбранную дату событий нет';
+      }
+      document.getElementById('selection-caption').textContent = caption;
+      const today = new Date(); today.setHours(0,0,0,0);
+      const fallbackStart = selectedDate > today ? selectedDate : today;
+      const fallback = filteredEvents().filter(e => new Date(e.datetime) >= fallbackStart).sort((a,b)=>new Date(a.datetime)-new Date(b.datetime)).slice(0,5);
+      const box = document.getElementById('calendar-events');
+      if (items.length) box.innerHTML = items.map(eventRow).join('');
+      else if (fallback.length) box.innerHTML = `<div class="calendar-empty-note">${viewMode === 'day' ? 'Вот ближайшие события:' : 'На этой неделе событий нет. Вот следующие:'}</div>` + fallback.map(eventRow).join('');
+      else box.innerHTML = '<div class="empty-state">Пока нет опубликованных событий.</div>';
+      const toggle = document.getElementById('week-toggle');
+      toggle.textContent = viewMode === 'week' ? 'Показать день' : 'Показать неделю';
+      toggle.classList.toggle('active', viewMode === 'week');
+    }
+
+    function shiftMonth(delta) {
+      monthCursor = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + delta, 1);
+      const lastDay = new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 0).getDate();
+      selectedDate = new Date(monthCursor.getFullYear(), monthCursor.getMonth(), Math.min(selectedDate.getDate(), lastDay));
+      viewMode = 'day';
+      renderCalendar(); renderResults();
+    }
+    document.getElementById('month-prev').addEventListener('click', () => shiftMonth(-1));
+    document.getElementById('month-next').addEventListener('click', () => shiftMonth(1));
+    document.getElementById('week-toggle').addEventListener('click', () => { viewMode = viewMode === 'week' ? 'day' : 'week'; renderResults(); });
+    document.getElementById('calendar-filter').addEventListener('change', () => { renderCalendar(); renderResults(); });
+
+    (async function init() {
+      try {
+        await loadBase();
+        allEvents = await api('/events?filter=all');
+        const firstUpcoming = allEvents.filter(e => new Date(e.datetime) >= new Date(new Date().setHours(0,0,0,0))).sort((a,b)=>new Date(a.datetime)-new Date(b.datetime))[0];
+        if (firstUpcoming) {
+          selectedDate = new Date(firstUpcoming.datetime); selectedDate.setHours(0,0,0,0);
+          monthCursor = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+        }
+        renderCalendar(); renderResults();
+      } catch (error) {
+        document.getElementById('calendar-events').innerHTML = `<div class="empty-state">${esc(error.message || 'Не удалось загрузить календарь')}</div>`;
+      }
+    })();
+  </script>
+</body>
+</html>
