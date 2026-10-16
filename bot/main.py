@@ -4,7 +4,7 @@ import asyncio
 from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import CommandStart, Command, StateFilter
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton, BotCommand, ReplyKeyboardRemove, WebAppInfo
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
 from aiogram.fsm.storage.memory import MemoryStorage
@@ -13,9 +13,12 @@ from difflib import SequenceMatcher
 
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
+FEEDBACK_CHAT_ID = os.getenv("FEEDBACK_CHAT_ID")
+MINI_APP_URL = os.getenv("MINI_APP_URL")
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher(storage=MemoryStorage())
+dp.message.filter(F.chat.type == "private")
 
 main_menu_keyboard = ReplyKeyboardMarkup(
     keyboard=[
@@ -38,6 +41,9 @@ main_menu_keyboard = ReplyKeyboardMarkup(
 DB_PATH = "hse_nn_clubs.db"
 class SearchClub(StatesGroup):
     waiting_for_name = State()
+
+class Feedback(StatesGroup):
+    waiting_for_text = State()
 
 async def get_categories():
     async with aiosqlite.connect(DB_PATH) as db:
@@ -152,12 +158,14 @@ async def start_handler(message: types.Message):
 async def help_handler(message: types.Message):
     await message.answer(
         "ℹ️ О проекте «Внеучебка ВШЭ – Нижний Новгород»\n\n"
-        "Этот бот создан студентами для студентов, чтобы собрать все 30 внеучебных клубов и объединений кампуса в одном месте 💙\n\n"
+        "Этот бот создан студентами для студентов, чтобы собрать все 27 внеучебных клубов и объединений кампуса в одном месте 💙\n\n"
         "❓ Как пользоваться:\n"
         "• Каталог клубов — выбери направление (творчество, спорт, наука и др.) и найди клуб по душе.\n"
         "• Найти клуб — быстрый поиск по названию.\n"
-        "• Открыть мини приложение — интерактивный каталог с фото и атмосферой клубов.\n"
-        "• Идеи и предложения — предложить новый клуб или исправление.\n\n"
+        "• 💙 Мини-приложение — интерактивный визуальный каталог с фото и атмосферой клубов.\n"
+        "• ✍️ Идеи и предложения — предложить новый клуб или исправление.\n\n"
+        "🛠 Поддержка и обратная связь:\n"
+        "Нашли баг, клуб сменил контакты или есть вопрос? Нажмите кнопку «✍️ Идеи и предложения» в меню ниже — сообщение сразу уйдёт команде проекта!\n\n"
         "🌐 Сайт внеучебки: https://nnov.hse.ru/nnovstudents/about\n"
         "📢 Канал «активННик HSE»: https://t.me/aktivnnik"
     )
@@ -165,12 +173,23 @@ async def help_handler(message: types.Message):
 @dp.message(Command("app"))
 @dp.message(F.text == "💙 Мини-приложение")
 async def miniapp_handler(message: types.Message):
-    await message.answer(
-        "💙 **Визуальный каталог внеучебки (Mini App)**\n\n"
-        "Здесь будет открываться интерактивное приложение с каруселями фотографий и атмосферой клубов!\n\n"
-        "*(Дизайн и верстка сейчас в разработке у команды)*",
-        parse_mode="Markdown"
-    )
+    if MINI_APP_URL:
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="🚀 Открыть мини-приложение", web_app=WebAppInfo(url=MINI_APP_URL))]
+        ])
+        await message.answer(
+            "💙 **Визуальный каталог внеучебки (Mini App)**\n\n"
+            "Нажми на кнопку ниже, чтобы открыть интерактивный каталог клубов с фотографиями прямо в Telegram:",
+            reply_markup=keyboard,
+            parse_mode="Markdown"
+        )
+    else:
+        await message.answer(
+            "💙 **Визуальный каталог внеучебки (Mini App)**\n\n"
+            "Здесь будет открываться интерактивное приложение с каруселями фотографий и атмосферой клубов!\n\n"
+            "*(Дизайн и верстка сейчас в разработке у команды)*",
+            parse_mode="Markdown"
+        )
 
 
 @dp.message(F.text == "📂 Каталог клубов")
@@ -358,9 +377,64 @@ async def go_to_main_menu_handler(callback: types.CallbackQuery):
 @dp.message(F.text == "⭐ Мои подписки")
 async def subscriptions_handler(message: types.Message):
     await message.answer("Твой список подписок пока пуст.")
+
+
 @dp.message(F.text == "✍️ Идеи и предложения")
-async def suggest_handler(message: types.Message):
-    await message.answer("Здесь можно будет предложить новость или новый клуб.")
+async def suggest_handler(message: types.Message, state: FSMContext):
+    await state.set_state(Feedback.waiting_for_text)
+    cancel_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_feedback")]
+    ])
+    await message.answer(
+        "✍️ **Идеи и предложения**\n\n"
+        "Напиши своё предложение, идею нового клуба или сообщение об ошибке одним сообщением.\n\n"
+        "Мы передадим его напрямую команде проекта!",
+        reply_markup=cancel_keyboard,
+        parse_mode="Markdown"
+    )
+
+@dp.callback_query(F.data == "cancel_feedback")
+async def cancel_feedback_handler(callback: types.CallbackQuery, state: FSMContext):
+    await callback.answer()
+    await state.clear()
+    await callback.message.edit_text("Действие отменено.")
+    await callback.message.answer(
+        "Главное меню:",
+        reply_markup=main_menu_keyboard
+    )
+
+@dp.message(StateFilter(Feedback.waiting_for_text))
+async def process_feedback_handler(message: types.Message, state: FSMContext):
+    user_text = message.text.strip()
+    await state.clear()
+    
+    sender_name = message.from_user.full_name
+    username = f"@{message.from_user.username}" if message.from_user.username else "нет username"
+    user_id = message.from_user.id
+
+    admin_message = (
+        f"📬 **Новое предложение от студента!**\n\n"
+        f"👤 **Отправитель:** {sender_name} ({username})\n"
+        f"🆔 **ID:** `{user_id}`\n\n"
+        f"📝 **Текст:**\n{user_text}"
+    )
+
+    if FEEDBACK_CHAT_ID:
+        try:
+            await bot.send_message(
+                chat_id=FEEDBACK_CHAT_ID,
+                text=admin_message,
+                reply_markup=ReplyKeyboardRemove(),
+                parse_mode="Markdown"
+            )
+        except Exception as e:
+            print(f"Не удалось отправить сообщение модераторам: {e}")
+
+    await message.answer(
+        "💙 Спасибо за обратную связь! Мы передали твоё сообщение команде проекта.",
+        reply_markup=main_menu_keyboard
+    )
+
 
 @dp.message()
 async def unknown_message_handler(message: types.Message):
