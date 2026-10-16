@@ -1,10 +1,7 @@
+
 meta:
-  environment: node
-  toolchain:
-    name: npm
-    version: 22
+  environment: docker
 
 run:
-  command: npm start
   containerPort: 3000
   persistenceMount: /data
