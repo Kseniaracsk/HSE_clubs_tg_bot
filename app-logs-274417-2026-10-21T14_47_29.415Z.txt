@@ -1,0 +1,498 @@
+     _\/\\\_____________\/\\\____\///_____\/\\\_____/\\\//________
+        _\///______________\///______________\///__\///////////////__
+  _\/\\\_______\/\\\_\/\\\//\\\____/\\\//\\\_\///______\//\\\__
+
+                          Runtime Edition
+                        -------------
+ _\/\\\/////////\\\_\/\\\\\\________/\\\\\\__/\\\///////\\\___
+
+
+      _\/\\\_____________\/\\\_____________\/\\\___/\\\/___________
+
+    _\/\\\/////////____\/\\\__\///\\\/___\/\\\________/\\\//_____
+       _\/\\\_____________\/\\\_____________\/\\\__/\\\\\\\\\\\\\\\_
+   _\/\\\\\\\\\\\\\/__\/\\\\///\\\/\\\/_\/\\\___________/\\\/___
+        PM2 is a Production Process Manager for Node.js applications
+__/\\\\\\\\\\\\\____/\\\\____________/\\\\____/\\\\\\\\\_____
+
+
+
+                        -------------
+
+
+
+                $ pm2 monitor
+
+                Make pm2 auto-boot at server restart:
+                To go further checkout:
+
+
+                http://pm2.io/
+                Start and Daemonize any application:
+                Monitor in production:
+                $ pm2 startup
+                $ pm2 start app.js
+                     with a built-in Load Balancer.
+                $ pm2 start api.js -i 4
+                Load Balance 4 instances of api.js:
+pm2 launched in no-daemon mode (you can add DEBUG="*" env variable to get more messages)
+2026-10-21T14:34:58: PM2 log: Launching in no daemon mode
+2026-10-21T14:34:58: PM2 log: [32m[PM2] [39mStarting /app/server.js in fork_mode (1 instance)
+2026-10-21T14:34:58: PM2 log: App [server:0] starting in -fork mode-
+2026-10-21T14:34:58: PM2 log: App [server:0] online
+2026-10-21T14:34:58: PM2 log: [32m[PM2] [39mDone.
+│ id │ name      │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+└────┴───────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+│ [1m[36m0[39m[22m  │ server    │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 25       │ 0s     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 30.4mb   │ [1mapp[22m      │ [90mdisabled[39m │
+├────┼───────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+2026-10-21T14:34:58: PM2 log: ┌────┬───────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+2026-10-21T14:34:58: PM2 log: [--no-daemon] Continue to stream logs
+2026-10-21T14:34:58: PM2 log: [--no-daemon] Exit on target PM2 exit pid=1
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39mError: attempt to write a readonly database
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at hasColumn (/app/server.js:33:13)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/app/server.js:41:1)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at ensureColumn (/app/server.js:36:8)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at Module.load (node:internal/modules/cjs/loader:1505:32)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at Function._load (node:internal/modules/cjs/loader:1309:12)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/usr/local/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10) {
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m  errcode: 1544,
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m  code: 'ERR_SQLITE_ERROR',
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m  errstr: 'attempt to write a readonly database'
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m}
+2026-10-21T14:34:58: PM2 log: App [server:0] exited with code [1] via signal [SIGINT]
+[2m[90m14:34:58 [39m[22m[34mPM2       | [39mApp [server:0] exited with code [1] via signal [SIGINT]
+2026-10-21T14:34:58: PM2 log: App [server:0] starting in -fork mode-
+[2m[90m14:34:58 [39m[22m[34mPM2       | [39mApp [server:0] starting in -fork mode-
+2026-10-21T14:34:58: PM2 log: App [server:0] online
+[2m[90m14:34:58 [39m[22m[34mPM2       | [39mApp [server:0] online
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at hasColumn (/app/server.js:33:13)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39mError: attempt to write a readonly database
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/app/server.js:41:1)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at ensureColumn (/app/server.js:36:8)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at Function._load (node:internal/modules/cjs/loader:1309:12)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at Module.load (node:internal/modules/cjs/loader:1505:32)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/usr/local/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10) {
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m  code: 'ERR_SQLITE_ERROR',
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m  errcode: 1544,
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m}
+[2m[90m14:34:58 [39m[22m[31m0|server  | [39m  errstr: 'attempt to write a readonly database'
+2026-10-21T14:34:58: PM2 log: App [server:0] exited with code [1] via signal [SIGINT]
+[2m[90m14:34:58 [39m[22m[34mPM2       | [39mApp [server:0] exited with code [1] via signal [SIGINT]
+2026-10-21T14:34:58: PM2 log: App [server:0] starting in -fork mode-
+[2m[90m14:34:58 [39m[22m[34mPM2       | [39mApp [server:0] starting in -fork mode-
+2026-10-21T14:34:58: PM2 log: App [server:0] online
+[2m[90m14:34:58 [39m[22m[34mPM2       | [39mApp [server:0] online
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39mError: attempt to write a readonly database
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at ensureColumn (/app/server.js:36:8)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at hasColumn (/app/server.js:33:13)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/app/server.js:41:1)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Module.load (node:internal/modules/cjs/loader:1505:32)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Function._load (node:internal/modules/cjs/loader:1309:12)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/usr/local/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10) {
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m  code: 'ERR_SQLITE_ERROR',
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m  errcode: 1544,
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m  errstr: 'attempt to write a readonly database'
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m}
+2026-10-21T14:34:59: PM2 log: App [server:0] exited with code [1] via signal [SIGINT]
+2026-10-21T14:34:59: PM2 log: App [server:0] starting in -fork mode-
+[2m[90m14:34:59 [39m[22m[34mPM2       | [39mApp [server:0] exited with code [1] via signal [SIGINT]
+[2m[90m14:34:59 [39m[22m[34mPM2       | [39mApp [server:0] starting in -fork mode-
+2026-10-21T14:34:59: PM2 log: App [server:0] online
+[2m[90m14:34:59 [39m[22m[34mPM2       | [39mApp [server:0] online
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39mError: attempt to write a readonly database
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at ensureColumn (/app/server.js:36:8)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at hasColumn (/app/server.js:33:13)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/app/server.js:41:1)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/usr/local/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Function._load (node:internal/modules/cjs/loader:1309:12)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Module.load (node:internal/modules/cjs/loader:1505:32)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10) {
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m  code: 'ERR_SQLITE_ERROR',
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m  errcode: 1544,
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m  errstr: 'attempt to write a readonly database'
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m}
+2026-10-21T14:34:59: PM2 log: App [server:0] exited with code [1] via signal [SIGINT]
+2026-10-21T14:34:59: PM2 log: App [server:0] starting in -fork mode-
+[2m[90m14:34:59 [39m[22m[34mPM2       | [39mApp [server:0] exited with code [1] via signal [SIGINT]
+[2m[90m14:34:59 [39m[22m[34mPM2       | [39mApp [server:0] starting in -fork mode-
+[2m[90m14:34:59 [39m[22m[34mPM2       | [39mApp [server:0] online
+2026-10-21T14:34:59: PM2 log: App [server:0] online
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39mError: attempt to write a readonly database
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at hasColumn (/app/server.js:33:13)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at ensureColumn (/app/server.js:36:8)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/app/server.js:41:1)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Module.load (node:internal/modules/cjs/loader:1505:32)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Function._load (node:internal/modules/cjs/loader:1309:12)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/usr/local/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10) {
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m  code: 'ERR_SQLITE_ERROR',
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m  errcode: 1544,
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m}
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m  errstr: 'attempt to write a readonly database'
+2026-10-21T14:34:59: PM2 log: App [server:0] exited with code [1] via signal [SIGINT]
+[2m[90m14:34:59 [39m[22m[34mPM2       | [39mApp [server:0] exited with code [1] via signal [SIGINT]
+2026-10-21T14:34:59: PM2 log: App [server:0] starting in -fork mode-
+[2m[90m14:34:59 [39m[22m[34mPM2       | [39mApp [server:0] starting in -fork mode-
+2026-10-21T14:34:59: PM2 log: App [server:0] online
+[2m[90m14:34:59 [39m[22m[34mPM2       | [39mApp [server:0] online
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39mError: attempt to write a readonly database
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at hasColumn (/app/server.js:33:13)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at ensureColumn (/app/server.js:36:8)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/app/server.js:41:1)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Module.load (node:internal/modules/cjs/loader:1505:32)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Function._load (node:internal/modules/cjs/loader:1309:12)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/usr/local/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10) {
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m  code: 'ERR_SQLITE_ERROR',
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m  errcode: 1544,
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m  errstr: 'attempt to write a readonly database'
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m}
+2026-10-21T14:34:59: PM2 log: App [server:0] exited with code [1] via signal [SIGINT]
+[2m[90m14:34:59 [39m[22m[34mPM2       | [39mApp [server:0] exited with code [1] via signal [SIGINT]
+2026-10-21T14:34:59: PM2 log: App [server:0] starting in -fork mode-
+[2m[90m14:34:59 [39m[22m[34mPM2       | [39mApp [server:0] starting in -fork mode-
+2026-10-21T14:34:59: PM2 log: App [server:0] online
+[2m[90m14:34:59 [39m[22m[34mPM2       | [39mApp [server:0] online
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39mError: attempt to write a readonly database
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at hasColumn (/app/server.js:33:13)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at ensureColumn (/app/server.js:36:8)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/app/server.js:41:1)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Function._load (node:internal/modules/cjs/loader:1309:12)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Module.load (node:internal/modules/cjs/loader:1505:32)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/usr/local/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m  errcode: 1544,
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10) {
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m  code: 'ERR_SQLITE_ERROR',
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m}
+[2m[90m14:34:59 [39m[22m[31m0|server  | [39m  errstr: 'attempt to write a readonly database'
+2026-10-21T14:34:59: PM2 log: App [server:0] exited with code [1] via signal [SIGINT]
+2026-10-21T14:34:59: PM2 log: App [server:0] starting in -fork mode-
+[2m[90m14:34:59 [39m[22m[34mPM2       | [39mApp [server:0] exited with code [1] via signal [SIGINT]
+[2m[90m14:34:59 [39m[22m[34mPM2       | [39mApp [server:0] starting in -fork mode-
+2026-10-21T14:34:59: PM2 log: App [server:0] online
+[2m[90m14:34:59 [39m[22m[34mPM2       | [39mApp [server:0] online
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39mError: attempt to write a readonly database
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at ensureColumn (/app/server.js:36:8)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at hasColumn (/app/server.js:33:13)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/app/server.js:41:1)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Function._load (node:internal/modules/cjs/loader:1309:12)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/usr/local/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Module.load (node:internal/modules/cjs/loader:1505:32)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10) {
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m  code: 'ERR_SQLITE_ERROR',
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m  errstr: 'attempt to write a readonly database'
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m  errcode: 1544,
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m}
+2026-10-21T14:35:00: PM2 log: App [server:0] exited with code [1] via signal [SIGINT]
+[2m[90m14:35:00 [39m[22m[34mPM2       | [39mApp [server:0] exited with code [1] via signal [SIGINT]
+2026-10-21T14:35:00: PM2 log: App [server:0] starting in -fork mode-
+[2m[90m14:35:00 [39m[22m[34mPM2       | [39mApp [server:0] starting in -fork mode-
+2026-10-21T14:35:00: PM2 log: App [server:0] online
+[2m[90m14:35:00 [39m[22m[34mPM2       | [39mApp [server:0] online
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39mError: attempt to write a readonly database
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at ensureColumn (/app/server.js:36:8)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at hasColumn (/app/server.js:33:13)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/app/server.js:41:1)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Module.load (node:internal/modules/cjs/loader:1505:32)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/usr/local/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Function._load (node:internal/modules/cjs/loader:1309:12)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10) {
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m  errcode: 1544,
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m  code: 'ERR_SQLITE_ERROR',
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m}
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m  errstr: 'attempt to write a readonly database'
+2026-10-21T14:35:00: PM2 log: App [server:0] exited with code [1] via signal [SIGINT]
+[2m[90m14:35:00 [39m[22m[34mPM2       | [39mApp [server:0] exited with code [1] via signal [SIGINT]
+2026-10-21T14:35:00: PM2 log: App [server:0] starting in -fork mode-
+[2m[90m14:35:00 [39m[22m[34mPM2       | [39mApp [server:0] starting in -fork mode-
+2026-10-21T14:35:00: PM2 log: App [server:0] online
+[2m[90m14:35:00 [39m[22m[34mPM2       | [39mApp [server:0] online
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39mError: attempt to write a readonly database
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at hasColumn (/app/server.js:33:13)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at ensureColumn (/app/server.js:36:8)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/app/server.js:41:1)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Function._load (node:internal/modules/cjs/loader:1309:12)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Module.load (node:internal/modules/cjs/loader:1505:32)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10) {
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/usr/local/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m  code: 'ERR_SQLITE_ERROR',
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m  errcode: 1544,
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m}
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m  errstr: 'attempt to write a readonly database'
+2026-10-21T14:35:00: PM2 log: App [server:0] exited with code [1] via signal [SIGINT]
+[2m[90m14:35:00 [39m[22m[34mPM2       | [39mApp [server:0] exited with code [1] via signal [SIGINT]
+2026-10-21T14:35:00: PM2 log: App [server:0] starting in -fork mode-
+[2m[90m14:35:00 [39m[22m[34mPM2       | [39mApp [server:0] starting in -fork mode-
+2026-10-21T14:35:00: PM2 log: App [server:0] online
+[2m[90m14:35:00 [39m[22m[34mPM2       | [39mApp [server:0] online
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39mError: attempt to write a readonly database
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at hasColumn (/app/server.js:33:13)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/app/server.js:41:1)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at ensureColumn (/app/server.js:36:8)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/usr/local/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Module.load (node:internal/modules/cjs/loader:1505:32)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Function._load (node:internal/modules/cjs/loader:1309:12)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m  code: 'ERR_SQLITE_ERROR',
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10) {
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m  errcode: 1544,
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m  errstr: 'attempt to write a readonly database'
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m}
+2026-10-21T14:35:00: PM2 log: App [server:0] exited with code [1] via signal [SIGINT]
+[2m[90m14:35:00 [39m[22m[34mPM2       | [39mApp [server:0] exited with code [1] via signal [SIGINT]
+2026-10-21T14:35:00: PM2 log: App [server:0] starting in -fork mode-
+[2m[90m14:35:00 [39m[22m[34mPM2       | [39mApp [server:0] starting in -fork mode-
+2026-10-21T14:35:00: PM2 log: App [server:0] online
+[2m[90m14:35:00 [39m[22m[34mPM2       | [39mApp [server:0] online
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39mError: attempt to write a readonly database
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at hasColumn (/app/server.js:33:13)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at ensureColumn (/app/server.js:36:8)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/app/server.js:41:1)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Function._load (node:internal/modules/cjs/loader:1309:12)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/usr/local/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Module.load (node:internal/modules/cjs/loader:1505:32)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10) {
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m  code: 'ERR_SQLITE_ERROR',
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m  errcode: 1544,
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m  errstr: 'attempt to write a readonly database'
+[2m[90m14:35:00 [39m[22m[31m0|server  | [39m}
+2026-10-21T14:35:00: PM2 log: App [server:0] exited with code [1] via signal [SIGINT]
+[2m[90m14:35:00 [39m[22m[34mPM2       | [39mApp [server:0] exited with code [1] via signal [SIGINT]
+2026-10-21T14:35:00: PM2 log: App [server:0] starting in -fork mode-
+[2m[90m14:35:00 [39m[22m[34mPM2       | [39mApp [server:0] starting in -fork mode-
+2026-10-21T14:35:00: PM2 log: App [server:0] online
+[2m[90m14:35:00 [39m[22m[34mPM2       | [39mApp [server:0] online
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at hasColumn (/app/server.js:33:13)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39mError: attempt to write a readonly database
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at ensureColumn (/app/server.js:36:8)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/app/server.js:41:1)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Module.load (node:internal/modules/cjs/loader:1505:32)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Function._load (node:internal/modules/cjs/loader:1309:12)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/usr/local/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m  code: 'ERR_SQLITE_ERROR',
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10) {
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m  errcode: 1544,
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m  errstr: 'attempt to write a readonly database'
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m}
+2026-10-21T14:35:01: PM2 log: App [server:0] exited with code [1] via signal [SIGINT]
+2026-10-21T14:35:01: PM2 log: App [server:0] starting in -fork mode-
+[2m[90m14:35:01 [39m[22m[34mPM2       | [39mApp [server:0] exited with code [1] via signal [SIGINT]
+[2m[90m14:35:01 [39m[22m[34mPM2       | [39mApp [server:0] starting in -fork mode-
+2026-10-21T14:35:01: PM2 log: App [server:0] online
+[2m[90m14:35:01 [39m[22m[34mPM2       | [39mApp [server:0] online
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39mError: attempt to write a readonly database
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at ensureColumn (/app/server.js:36:8)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/app/server.js:41:1)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at hasColumn (/app/server.js:33:13)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/usr/local/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Module.load (node:internal/modules/cjs/loader:1505:32)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Function._load (node:internal/modules/cjs/loader:1309:12)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10) {
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m  code: 'ERR_SQLITE_ERROR',
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m  errcode: 1544,
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m  errstr: 'attempt to write a readonly database'
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m}
+2026-10-21T14:35:01: PM2 log: App [server:0] exited with code [1] via signal [SIGINT]
+2026-10-21T14:35:01: PM2 log: App [server:0] starting in -fork mode-
+[2m[90m14:35:01 [39m[22m[34mPM2       | [39mApp [server:0] exited with code [1] via signal [SIGINT]
+[2m[90m14:35:01 [39m[22m[34mPM2       | [39mApp [server:0] starting in -fork mode-
+2026-10-21T14:35:01: PM2 log: App [server:0] online
+[2m[90m14:35:01 [39m[22m[34mPM2       | [39mApp [server:0] online
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39mError: attempt to write a readonly database
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at hasColumn (/app/server.js:33:13)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/app/server.js:41:1)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at ensureColumn (/app/server.js:36:8)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Module.load (node:internal/modules/cjs/loader:1505:32)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Function._load (node:internal/modules/cjs/loader:1309:12)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/usr/local/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m  code: 'ERR_SQLITE_ERROR',
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10) {
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m  errstr: 'attempt to write a readonly database'
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m  errcode: 1544,
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m}
+2026-10-21T14:35:01: PM2 log: App [server:0] exited with code [1] via signal [SIGINT]
+[2m[90m14:35:01 [39m[22m[34mPM2       | [39mApp [server:0] exited with code [1] via signal [SIGINT]
+2026-10-21T14:35:01: PM2 log: App [server:0] starting in -fork mode-
+[2m[90m14:35:01 [39m[22m[34mPM2       | [39mApp [server:0] starting in -fork mode-
+2026-10-21T14:35:01: PM2 log: App [server:0] online
+[2m[90m14:35:01 [39m[22m[34mPM2       | [39mApp [server:0] online
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39mError: attempt to write a readonly database
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/app/server.js:41:1)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at ensureColumn (/app/server.js:36:8)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at hasColumn (/app/server.js:33:13)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Module.load (node:internal/modules/cjs/loader:1505:32)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Object.<anonymous> (/usr/local/lib/node_modules/pm2/lib/ProcessContainerFork.js:33:23)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Function._load (node:internal/modules/cjs/loader:1309:12)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Module._compile (node:internal/modules/cjs/loader:1781:14)
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m    at Object..js (node:internal/modules/cjs/loader:1913:10) {
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m  code: 'ERR_SQLITE_ERROR',
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m  errstr: 'attempt to write a readonly database'
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m  errcode: 1544,
+[2m[90m14:35:01 [39m[22m[31m0|server  | [39m}
+2026-10-21T14:35:01: PM2 log: App [server:0] exited with code [1] via signal [SIGINT]
+2026-10-21T14:35:01: PM2 log: Script /app/server.js had too many unstable restarts (16). Stopped. "errored"
+[2m[90m14:35:01 [39m[22m[34mPM2       | [39mApp [server:0] exited with code [1] via signal [SIGINT]
+[2m[90m14:35:01 [39m[22m[34mPM2       | [39mScript /app/server.js had too many unstable restarts (16). Stopped. "errored"
+
+                          Runtime Edition
+
+                $ pm2 startup
+__/\\\\\\\\\\\\\____/\\\\____________/\\\\____/\\\\\\\\\_____
+
+                $ pm2 monitor
+
+                Start and Daemonize any application:
+        _\///______________\///______________\///__\///////////////__
+
+ _\/\\\/////////\\\_\/\\\\\\________/\\\\\\__/\\\///////\\\___
+                Monitor in production:
+                $ pm2 start app.js
+  _\/\\\_______\/\\\_\/\\\//\\\____/\\\//\\\_\///______\//\\\__
+                        -------------
+                Load Balance 4 instances of api.js:
+
+
+        PM2 is a Production Process Manager for Node.js applications
+
+                Make pm2 auto-boot at server restart:
+                        -------------
+     _\/\\\_____________\/\\\____\///_____\/\\\_____/\\\//________
+                $ pm2 start api.js -i 4
+       _\/\\\_____________\/\\\_____________\/\\\__/\\\\\\\\\\\\\\\_
+
+                To go further checkout:
+    _\/\\\/////////____\/\\\__\///\\\/___\/\\\________/\\\//_____
+                http://pm2.io/
+   _\/\\\\\\\\\\\\\/__\/\\\\///\\\/\\\/_\/\\\___________/\\\/___
+
+      _\/\\\_____________\/\\\_____________\/\\\___/\\\/___________
+                     with a built-in Load Balancer.
+
+
+
+pm2 launched in no-daemon mode (you can add DEBUG="*" env variable to get more messages)
+2026-10-21T14:46:20: PM2 log: Launching in no daemon mode
+2026-10-21T14:46:20: PM2 log: [32m[PM2] [39mStarting /app/server.js in fork_mode (1 instance)
+2026-10-21T14:46:20: PM2 log: App [server:0] starting in -fork mode-
+2026-10-21T14:46:20: PM2 log: App [server:0] online
+2026-10-21T14:46:20: PM2 log: [32m[PM2] [39mDone.
+2026-10-21T14:46:20: PM2 log: ┌────┬───────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+│ id │ name      │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+│ [1m[36m0[39m[22m  │ server    │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 26       │ 0s     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 28.3mb   │ [1mapp[22m      │ [90mdisabled[39m │
+├────┼───────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+└────┴───────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+2026-10-21T14:46:20: PM2 log: [--no-daemon] Continue to stream logs
+2026-10-21T14:46:20: PM2 log: [--no-daemon] Exit on target PM2 exit pid=1
+[2m[90m14:46:20 [39m[22m[31m0|server  | [39mНе удалось прочитать ключ сервисного аккаунта: ENOENT: no such file or directory, open '/app/just-function-511910-v0-ff9186fcc5be.json'
+[2m[90m14:46:20 [39m[22m[31m0|server  | [39m(node:26) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+[2m[90m14:46:20 [39m[22m[31m0|server  | [39m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[90m14:46:20 [39m[22m[32m0|server  | [39mДанные из SQLite: 6 категорий, 28 активных клубов, 0 опубликованных событий.
+[2m[90m14:46:20 [39m[22m[32m0|server  | [39mHSE clubs NN запущен на порту 3000. SQLite: /tmp/hse_nn_clubs.db
+[2m[90m14:46:20 [39m[22m[32m0|server  | [39mБот запущен: @iuy7ujkiuk_bot
+[2m[90m14:46:20 [39m[22m[32m0|server  | [39mБот успешно запущен и слушает Telegram...
+__/\\\\\\\\\\\\\____/\\\\____________/\\\\____/\\\\\\\\\_____
+                $ pm2 start api.js -i 4
+                $ pm2 start app.js
+                          Runtime Edition
+ _\/\\\/////////\\\_\/\\\\\\________/\\\\\\__/\\\///////\\\___
+    _\/\\\/////////____\/\\\__\///\\\/___\/\\\________/\\\//_____
+        _\///______________\///______________\///__\///////////////__
+      _\/\\\_____________\/\\\_____________\/\\\___/\\\/___________
+   _\/\\\\\\\\\\\\\/__\/\\\\///\\\/\\\/_\/\\\___________/\\\/___
+
+  _\/\\\_______\/\\\_\/\\\//\\\____/\\\//\\\_\///______\//\\\__
+                $ pm2 monitor
+       _\/\\\_____________\/\\\_____________\/\\\__/\\\\\\\\\\\\\\\_
+                Make pm2 auto-boot at server restart:
+
+     _\/\\\_____________\/\\\____\///_____\/\\\_____/\\\//________
+
+
+                Load Balance 4 instances of api.js:
+
+
+        PM2 is a Production Process Manager for Node.js applications
+                Start and Daemonize any application:
+
+                Monitor in production:
+
+
+
+                        -------------
+                     with a built-in Load Balancer.
+                $ pm2 startup
+
+                        -------------
+
+                http://pm2.io/
+                To go further checkout:
+
+pm2 launched in no-daemon mode (you can add DEBUG="*" env variable to get more messages)
+2026-10-21T14:46:35: PM2 log: Launching in no daemon mode
+2026-10-21T14:46:35: PM2 log: [32m[PM2] [39mStarting /app/server.js in fork_mode (1 instance)
+2026-10-21T14:46:35: PM2 log: App [server:0] starting in -fork mode-
+2026-10-21T14:46:35: PM2 log: App [server:0] online
+2026-10-21T14:46:35: PM2 log: [32m[PM2] [39mDone.
+│ id │ name      │ namespace   │ version │ mode    │ pid      │ uptime │ ↺    │ status    │ cpu      │ mem      │ user     │ watching │
+└────┴───────────┴─────────────┴─────────┴─────────┴──────────┴────────┴──────┴───────────┴──────────┴──────────┴──────────┴──────────┘
+│ [1m[36m0[39m[22m  │ server    │ default     │ 1.0.0   │ [7m[1mfork[22m[27m    │ 18       │ 0s     │ 0    │ [32m[1monline[22m[39m    │ 0%       │ 28.9mb   │ [1mapp[22m      │ [90mdisabled[39m │
+├────┼───────────┼─────────────┼─────────┼─────────┼──────────┼────────┼──────┼───────────┼──────────┼──────────┼──────────┼──────────┤
+2026-10-21T14:46:35: PM2 log: ┌────┬───────────┬─────────────┬─────────┬─────────┬──────────┬────────┬──────┬───────────┬──────────┬──────────┬──────────┬──────────┐
+2026-10-21T14:46:36: PM2 log: [--no-daemon] Exit on target PM2 exit pid=1
+2026-10-21T14:46:36: PM2 log: [--no-daemon] Continue to stream logs
+[2m[90m14:46:36 [39m[22m[31m0|server  | [39mНе удалось прочитать ключ сервисного аккаунта: ENOENT: no such file or directory, open '/app/just-function-511910-v0-ff9186fcc5be.json'
+[2m[90m14:46:36 [39m[22m[31m0|server  | [39m(node:18) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+[2m[90m14:46:36 [39m[22m[31m0|server  | [39m(Use `node --trace-warnings ...` to show where the warning was created)
+[2m[90m14:46:36 [39m[22m[32m0|server  | [39mДанные из SQLite: 6 категорий, 28 активных клубов, 0 опубликованных событий.
+[2m[90m14:46:36 [39m[22m[32m0|server  | [39mHSE clubs NN запущен на порту 3000. SQLite: /tmp/hse_nn_clubs.db
+[2m[90m14:46:36 [39m[22m[32m0|server  | [39mБот запущен: @iuy7ujkiuk_bot
+[2m[90m14:46:36 [39m[22m[32m0|server  | [39mБот успешно запущен и слушает Telegram...
