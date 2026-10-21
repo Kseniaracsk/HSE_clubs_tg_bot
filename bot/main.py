@@ -27,18 +27,22 @@ main_menu_keyboard = ReplyKeyboardMarkup(
             KeyboardButton(text="📂 Каталог клубов")
         ],
         [
-            KeyboardButton(text="⭐ Мои подписки"),
+            KeyboardButton(text="⭐ Мои клубы"),
             KeyboardButton(text="💙 Мини-приложение")
         ],
         [
-            KeyboardButton(text="✍️ Идеи и предложения"),
+            KeyboardButton(text="✍️ Идеи и правки"),
             KeyboardButton(text="ℹ️ О проекте и помощь")
         ]
     ],
     resize_keyboard=True
 )
 
-DB_PATH = "hse_nn_clubs.db"
+if os.path.exists("/data/hse_nn_clubs.db"):
+    DB_PATH = "/data/hse_nn_clubs.db"
+else:
+    DB_PATH = os.getenv("SQLITE_DB_PATH", "hse_nn_clubs.db")
+    
 class SearchClub(StatesGroup):
     waiting_for_name = State()
 
@@ -76,6 +80,65 @@ async def get_all_clubs():
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute("SELECT id, name FROM clubs WHERE is_active = 1 ORDER BY name") as cursor:
             return await cursor.fetchall()
+
+async def get_or_create_user(user):
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute("SELECT id FROM users WHERE telegram_id = ?", (user.id,)) as cursor:
+            row = await cursor.fetchone()
+            if row:
+                return row[0]
+        cursor = await db.execute(
+            "INSERT INTO users (telegram_id, chat_id, username, first_name, last_name) VALUES (?, ?, ?, ?, ?)",
+            (user.id, user.id, user.username, user.first_name, user.last_name)
+        )
+        await db.commit()
+        return cursor.lastrowid
+
+async def get_saved_clubs_by_user(user_db_id):
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            """
+            SELECT c.id, c.name, c.telegram_channel_url, c.vk_group_url
+            FROM clubs c
+            JOIN subscriptions s ON c.id = s.club_id
+            WHERE s.user_id = ? AND c.is_active = 1
+            ORDER BY c.name
+            """,
+            (user_db_id,)
+        ) as cursor:
+            return await cursor.fetchall()
+
+async def is_club_saved(user_db_id, club_id):
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT 1 FROM subscriptions WHERE user_id = ? AND club_id = ?",
+            (user_db_id, club_id)
+        ) as cursor:
+            row = await cursor.fetchone()
+            return bool(row)
+
+async def save_club_to_user(user_db_id, club_id):
+    async with aiosqlite.connect(DB_PATH) as db:
+        async with db.execute(
+            "SELECT 1 FROM subscriptions WHERE user_id = ? AND club_id = ?",
+            (user_db_id, club_id)
+        ) as cursor:
+            if not await cursor.fetchone():
+                await db.execute(
+                    "INSERT INTO subscriptions (user_id, club_id) VALUES (?, ?)",
+                    (user_db_id, club_id)
+                )
+                await db.commit()
+
+async def remove_club_from_user(user_db_id, club_id):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "DELETE FROM subscriptions WHERE user_id = ? AND club_id = ?",
+            (user_db_id, club_id)
+        )
+        await db.commit()
+
+
 
 #переводчик со слэнга и англа
 SEARCH_ALIASES = {
@@ -162,10 +225,11 @@ async def help_handler(message: types.Message):
         "❓ Как пользоваться:\n"
         "• Каталог клубов — выбери направление (творчество, спорт, наука и др.) и найди клуб по душе.\n"
         "• Найти клуб — быстрый поиск по названию.\n"
+        "• ⭐ Мои клубы — личный список сохранённых клубов для быстрого доступа.\n"
         "• 💙 Мини-приложение — интерактивный визуальный каталог с фото и атмосферой клубов.\n"
-        "• ✍️ Идеи и предложения — предложить новый клуб или исправление.\n\n"
+        "• ✍️ Идеи и правки — предложить новый клуб или сообщить об ошибке.\n\n"
         "🛠 Поддержка и обратная связь:\n"
-        "Нашли баг, клуб сменил контакты или есть вопрос? Нажмите кнопку «✍️ Идеи и предложения» в меню ниже — сообщение сразу уйдёт команде проекта!\n\n"
+        "Нашли баг, клуб сменил контакты или есть вопрос? Нажмите кнопку «✍️ Идеи и правки» в меню ниже — сообщение сразу уйдёт команде проекта!\n\n"
         "🌐 Сайт внеучебки: https://nnov.hse.ru/nnovstudents/about\n"
         "📢 Канал «активННик HSE»: https://t.me/aktivnnik"
     )
@@ -272,6 +336,33 @@ async def show_all_clubs_handler(callback: types.CallbackQuery):
     keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
     await callback.message.edit_text("📋 Список всех клубов Вышки:", reply_markup=keyboard)
 
+def build_club_keyboard(club_id, category_id, tg_url, vk_url, app_form_url, is_saved):
+    card_buttons = []
+    if app_form_url:
+        card_buttons.append([
+            InlineKeyboardButton(text="📝 Подать заявку", url=app_form_url)
+        ])
+    social_row = []
+    if tg_url:
+        social_row.append(InlineKeyboardButton(text="📢 Telegram", url=tg_url))
+    if vk_url:
+        social_row.append(InlineKeyboardButton(text="🌐 ВКонтакте", url=vk_url))
+    if social_row:
+        card_buttons.append(social_row)
+    if is_saved:
+        card_buttons.append([
+            InlineKeyboardButton(text="❌ Удалить из Моих клубов", callback_data=f"toggle_club_{club_id}")
+        ])
+    else:
+        card_buttons.append([
+            InlineKeyboardButton(text="⭐ Сохранить в Мои клубы", callback_data=f"toggle_club_{club_id}")
+        ])
+    card_buttons.append([
+        InlineKeyboardButton(text="⬅️ К направлению", callback_data=f"category_{category_id}"),
+        InlineKeyboardButton(text="📋 Все клубы", callback_data="show_all_clubs")
+    ])
+    return InlineKeyboardMarkup(inline_keyboard=card_buttons)
+
 @dp.callback_query(F.data.startswith("club_"))
 async def club_click_handler(callback: types.CallbackQuery):
     await callback.answer()
@@ -289,29 +380,36 @@ async def club_click_handler(callback: types.CallbackQuery):
     if curator:
         clean_curator = curator.replace("_", "\\_")
         text += f"\n👤 Куратор: {clean_curator}"
-    card_buttons = []
-    if app_form_url:
-        card_buttons.append([
-            InlineKeyboardButton(text="📝 Подать заявку", url=app_form_url)
-        ])
-    social_row = []
-    if tg_url:
-        social_row.append(InlineKeyboardButton(text="⭐ Подписаться", url=tg_url))
-    if vk_url:
-        social_row.append(InlineKeyboardButton(text="🌐 ВК", url=vk_url))
-    if social_row:
-        card_buttons.append(social_row)
-    card_buttons.append([
-        InlineKeyboardButton(text="⬅️ К направлению", callback_data=f"category_{category_id}"),
-        InlineKeyboardButton(text="📋 Все клубы", callback_data="show_all_clubs")
-    ])
-    
-    keyboard = InlineKeyboardMarkup(inline_keyboard=card_buttons)
+
+    user_db_id = await get_or_create_user(callback.from_user)
+    is_saved = await is_club_saved(user_db_id, club_id)
+    keyboard = build_club_keyboard(club_id, category_id, tg_url, vk_url, app_form_url, is_saved)
+
     await callback.message.answer(
         text,
         reply_markup=keyboard,
         parse_mode="Markdown"
     )
+
+@dp.callback_query(F.data.startswith("toggle_club_"))
+async def toggle_club_handler(callback: types.CallbackQuery):
+    club_id = int(callback.data.split("_")[2])
+    user_db_id = await get_or_create_user(callback.from_user)
+    is_saved = await is_club_saved(user_db_id, club_id)
+    if is_saved:
+        await remove_club_from_user(user_db_id, club_id)
+        toast_text = "Клуб удалён из «Моих клубов»"
+    else:
+        await save_club_to_user(user_db_id, club_id)
+        toast_text = "Клуб сохранён в «Мои клубы» ⭐"
+    await callback.answer(toast_text)
+    club = await get_club_by_id(club_id)
+    if not club:
+        return
+    _, _, _, tg_url, _, vk_url, category_id, app_form_url = club
+    new_keyboard = build_club_keyboard(club_id, category_id, tg_url, vk_url, app_form_url, not is_saved)
+    await callback.message.edit_reply_markup(reply_markup=new_keyboard)
+
 
 
 @dp.message(F.text == "🔍 Найти клуб")
@@ -374,20 +472,103 @@ async def go_to_main_menu_handler(callback: types.CallbackQuery):
     )
 
 
-@dp.message(F.text == "⭐ Мои подписки")
-async def subscriptions_handler(message: types.Message):
-    await message.answer("Твой список подписок пока пуст.")
+@dp.message(F.text.in_(["⭐ Мои клубы", "⭐ Мои подписки"]))
+async def my_clubs_handler(message: types.Message):
+    user_db_id = await get_or_create_user(message.from_user)
+    clubs = await get_saved_clubs_by_user(user_db_id)
+    if not clubs:
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📂 Открыть каталог клубов", callback_data="back_to_categories")]
+        ])
+        await message.answer(
+            "⭐ **У тебя пока нет сохранённых клубов**\n\n"
+            "Здесь будут отображаться клубы, которые ты добавишь в избранное.\n\n"
+            "Чтобы сохранить клуб, открой его карточку в каталоге или поиске и нажми кнопку сохранения!",
+            reply_markup=keyboard,
+            parse_mode="Markdown"
+        )
+        return
+    text = f"⭐ **Твои сохранённые клубы ({len(clubs)}):**\n\n"
+    buttons = []
+    for index, (club_id, club_name, tg_url, vk_url) in enumerate(clubs, start=1):
+        links = []
+        if tg_url:
+            links.append(f"[Telegram]({tg_url})")
+        if vk_url:
+            links.append(f"[ВКонтакте]({vk_url})")
+        links_text = " • ".join(links) if links else "контакты в карточке"
+
+        text += f"{index}. **{club_name}**\n   🔗 {links_text}\n\n"
+        buttons.append([
+            InlineKeyboardButton(text=f"📌 {club_name}", callback_data=f"club_{club_id}"),
+            InlineKeyboardButton(text="❌ Удалить", callback_data=f"remove_my_club_{club_id}")
+        ])
+    buttons.append([
+        InlineKeyboardButton(text="📂 В каталог клубов", callback_data="back_to_categories")
+    ])
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    await message.answer(
+        text,
+        reply_markup=keyboard,
+        parse_mode="Markdown",
+        disable_web_page_preview=True
+    )
+
+@dp.callback_query(F.data.startswith("remove_my_club_"))
+async def remove_my_club_handler(callback: types.CallbackQuery):
+    club_id = int(callback.data.split("_")[3])
+    user_db_id = await get_or_create_user(callback.from_user)
+    await remove_club_from_user(user_db_id, club_id)
+    await callback.answer("Клуб удалён из сохранённых")
+    clubs = await get_saved_clubs_by_user(user_db_id)
+    if not clubs:
+        keyboard = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(text="📂 Открыть каталог клубов", callback_data="back_to_categories")]
+        ])
+        await callback.message.edit_text(
+            "⭐ **У тебя пока нет сохранённых клубов**\n\n"
+            "Здесь будут отображаться клубы, которые ты добавишь в избранное.\n\n"
+            "Чтобы сохранить клуб, открой его карточку в каталоге или поиске и нажми кнопку сохранения!",
+            reply_markup=keyboard,
+            parse_mode="Markdown"
+        )
+        return
+    text = f"⭐ **Твои сохранённые клубы ({len(clubs)}):**\n\n"
+    buttons = []
+    for index, (c_id, club_name, tg_url, vk_url) in enumerate(clubs, start=1):
+        links = []
+        if tg_url:
+            links.append(f"[Telegram]({tg_url})")
+        if vk_url:
+            links.append(f"[ВКонтакте]({vk_url})")
+        links_text = " • ".join(links) if links else "контакты в карточке"
+
+        text += f"{index}. **{club_name}**\n   🔗 {links_text}\n\n"
+        buttons.append([
+            InlineKeyboardButton(text=f"📌 {club_name}", callback_data=f"club_{c_id}"),
+            InlineKeyboardButton(text="❌ Удалить", callback_data=f"remove_my_club_{c_id}")
+        ])
+    buttons.append([
+        InlineKeyboardButton(text="📂 В каталог клубов", callback_data="back_to_categories")
+    ])
+    keyboard = InlineKeyboardMarkup(inline_keyboard=buttons)
+    await callback.message.edit_text(
+        text,
+        reply_markup=keyboard,
+        parse_mode="Markdown",
+        disable_web_page_preview=True
+    )
 
 
-@dp.message(F.text == "✍️ Идеи и предложения")
+@dp.message(F.text.in_(["✍️ Идеи и правки", "✍️ Идеи и предложения"]))
 async def suggest_handler(message: types.Message, state: FSMContext):
     await state.set_state(Feedback.waiting_for_text)
     cancel_keyboard = InlineKeyboardMarkup(inline_keyboard=[
         [InlineKeyboardButton(text="❌ Отмена", callback_data="cancel_feedback")]
     ])
     await message.answer(
-        "✍️ **Идеи и предложения**\n\n"
-        "Напиши своё предложение, идею нового клуба или сообщение об ошибке одним сообщением.\n\n"
+        "✍️ **Идеи и правки**\n\n"
+        "Напиши свою идею, правку по клубу или сообщение об ошибке одним сообщением.\n\n"
         "Мы передадим его напрямую команде проекта!",
         reply_markup=cancel_keyboard,
         parse_mode="Markdown"
@@ -413,7 +594,7 @@ async def process_feedback_handler(message: types.Message, state: FSMContext):
     user_id = message.from_user.id
 
     admin_message = (
-        f"📬 **Новое предложение от студента!**\n\n"
+        f"📬 **Новая идея или правка от студента!**\n\n"
         f"👤 **Отправитель:** {sender_name} ({username})\n"
         f"🆔 **ID:** `{user_id}`\n\n"
         f"📝 **Текст:**\n{user_text}"
@@ -452,7 +633,24 @@ async def main():
         BotCommand(command="app", description="Открыть мини-приложение")
     ])
     print("Бот успешно запущен и слушает Telegram...")
-    await dp.start_polling(bot)
+    try:
+        await dp.start_polling(bot)
+    except (KeyboardInterrupt, SystemExit):
+        print("Бот остановлен пользователем.")
+    except Exception as error:
+        print(f"Критическая ошибка: {error}")
+        if FEEDBACK_CHAT_ID:
+            try:
+                await bot.send_message(
+                    chat_id=FEEDBACK_CHAT_ID,
+                    text=f"🚨 **Критический сбой бота!**\n\nПроцесс аварийно завершился с ошибкой:\n`{error}`",
+                    parse_mode="Markdown"
+                )
+            except Exception as send_err:
+                print(f"Не удалось отправить сообщение о сбое: {send_err}")
+        raise error
+    finally:
+        await bot.session.close()
 
 if __name__ == "__main__":
     asyncio.run(main())
