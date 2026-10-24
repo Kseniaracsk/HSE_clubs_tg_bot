@@ -97,8 +97,18 @@ function toast(msg) {
 
 // вибрация. мелочь, а приятно
 function haptic(type = 'light') {
-  if (!tg || !tg.HapticFeedback) return;
-  tg.HapticFeedback.impactOccurred(type);
+  try {
+    if (!tg || !tg.HapticFeedback) return;
+    tg.HapticFeedback.impactOccurred(type);
+  } catch (_) { /* некоторые клиенты не умеют - просто пропускаем */ }
+}
+
+// «сигнальная» вибрация: success / error / warning (notificationOccurred)
+function notify(type = 'success') {
+  try {
+    if (!tg || !tg.HapticFeedback) return;
+    tg.HapticFeedback.notificationOccurred(type);
+  } catch (_) { /* см. haptic */ }
 }
 
 // ---------- иконки ----------
@@ -132,7 +142,10 @@ if (!localStorage.getItem('hse_user') && !location.pathname.endsWith('login.html
 // если фотки нет - ставим нашу аву из папки icons
 function getAvaUrl() {
   const user = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
-  return (user && user.photo_url) ? user.photo_url : 'icons/ava.png';
+  // у пользователей с несколькими аватарками photo_url из initData бывает
+  // битым или отсутствует — сервер сам достанет актуальное фото через Bot API
+  if (user && user.id) return `/api/avatar?user=${Number(user.id)}`;
+  return 'icons/ava.png';
 }
 
 // выйти (кнопка в профиле): стираем флажок и на страницу входа

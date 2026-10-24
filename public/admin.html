@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <title>Панель администратора — HSE clubs NN</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="css/style.css?v=sqlite-users-contacts-20261016">
+  <link rel="stylesheet" href="css/style.css?v=fixes-20261021c">
 </head>
 <body>
   <div id="app" class="admin-app">
@@ -144,7 +144,16 @@
     </section>
   </div>
 
-  <script src="js/common.js?v=sqlite-users-contacts-20261016"></script>
+ 
+  <div class="photo-viewer" id="photo-viewer" hidden>
+    <button class="photo-viewer-close" id="pv-close" type="button" aria-label="Закрыть">&times;</button>
+    <button class="carousel-arrow prev" id="pv-prev" type="button" aria-label="Предыдущее фото">&lsaquo;</button>
+    <img id="pv-img" src="" alt="Просмотр фото">
+    <button class="carousel-arrow next" id="pv-next" type="button" aria-label="Следующее фото">&rsaquo;</button>
+    <div class="photo-viewer-counter" id="pv-counter"></div>
+  </div>
+
+  <script src="js/common.js?v=fixes-20261021c"></script>
   <script>
     document.querySelector('.back-ico').innerHTML = I.back;
     let adminData = null;
@@ -173,10 +182,19 @@
       const details = parseDetails(s);
       return Object.entries(details).filter(([key,value]) => value != null && value !== '' && typeof value !== 'object').map(([key,value]) => `${key}: ${value}`).join('\n') || String(s.details || 'Подробности не указаны');
     }
-    // Для рассылки подходят анонсы событий и запросы на изменение карточки клуба.
-    // Заявки на добавление нового клуба и личные обращения сюда не попадают.
+    
+    
+
     function isBroadcastEligibleSubmission(submission) {
       return Boolean(submission) && ['event', 'fix'].includes(String(submission.type || '').toLowerCase());
+    }
+
+    function submissionImages(s) {
+      let media = []; try { media = JSON.parse(s.media || '[]'); } catch (_) {}
+      return (Array.isArray(media) ? media : [])
+        .filter(file => file && (String(file.type || '').startsWith('image/') || /^data:image\//i.test(String(file.data || ''))))
+        .map(file => String(file.url || file.data || ''))
+        .filter(src => /^data:image\//i.test(src) || /^https?:\/\//i.test(src));
     }
 
     function submissionCard(s) {
@@ -187,6 +205,10 @@
       const optionsClubs = clubs.map(c => `<option value="${c.id}" ${clubId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
       const optionsCategories = categories.map(c => `<option value="${c.id}" ${categoryId === c.id ? 'selected' : ''}>${esc(c.name)}</option>`).join('');
       const pendingClass = ['pending','changes'].includes(s.status) ? ' mod-card-pending' : '';
+      const imgs = submissionImages(s);
+      const photosHtml = imgs.length
+        ? `<div class="submission-photos">${imgs.map((src, i) => `<img src="${esc(src)}" alt="Фото ${i + 1}" loading="lazy" data-pv="${s.id}" data-idx="${i}">`).join('')}</div>`
+        : '';
       return `<article class="mod-card${pendingClass}" data-submission-card="${s.id}">
         <div class="mod-card-top"><div><b>Заявка №${s.id}</b><span class="mod-type">${esc(typeNames[s.type] || s.type)}</span></div><span class="status-pill status-${esc(s.status)}">${esc(statusNames[s.status] || s.status)}</span></div>
         <div class="mod-title">${esc(s.title || 'Без названия')}</div>
@@ -196,6 +218,7 @@
         <textarea class="textarea submission-comment" id="submission-comment-${s.id}" data-comment="${s.id}" rows="2" placeholder="Напишите, что нужно исправить или поясните решение">${esc(s.adminComment || '')}</textarea>
         <div class="admin-form-grid"><label>Связанный клуб<select class="input" data-club="${s.id}"><option value="">Не выбран</option>${optionsClubs}</select></label><label>Категория<select class="input" data-category="${s.id}"><option value="">Не выбрана</option>${optionsCategories}</select></label></div>
         <details class="submission-details"><summary>Данные заявки</summary><pre>${esc(detailsText(s))}</pre></details>
+        ${photosHtml}
         <div class="actions admin-actions">
           <button class="action-secondary" data-view="${s.id}" type="button">Материалы</button>
           <button class="action-secondary" data-save-comment="${s.id}" type="button">Отправить комментарий</button>
@@ -274,13 +297,17 @@
     }
 
     function bindSubmissionButtons() {
+      document.querySelectorAll('[data-pv]').forEach(img => img.addEventListener('click', () => {
+        const submission = adminData.submissions.find(item => item.id === Number(img.dataset.pv));
+        if (!submission) return;
+        openPhotoViewer(submissionImages(submission), Number(img.dataset.idx) || 0);
+      }));
       document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => {
         const submission = adminData.submissions.find(item => item.id === Number(button.dataset.view));
         if (!submission) return;
-        let media = []; try { media = JSON.parse(submission.media || '[]'); } catch (_) {}
-        const images = Array.isArray(media) ? media.filter(file => file && file.data && String(file.type || '').startsWith('image/')) : [];
-        images.forEach(file => window.open(file.data, '_blank', 'noopener'));
-        alert(`${submission.title}\n\n${detailsText(submission)}${images.length ? `\n\nОткрыто изображений: ${images.length}` : '\n\nВложенных изображений нет'}`);
+        const images = submissionImages(submission);
+        if (!images.length) { toast('Вложенных изображений нет'); return; }
+        openPhotoViewer(images);
       }));
       document.querySelectorAll('[data-save-comment]').forEach(button => button.addEventListener('click', async () => {
         const card = submissionCardFor(button);
@@ -325,7 +352,33 @@
         <label>Категория<select class="input" data-club-field="categoryId">${categories.map(cat => `<option value="${cat.id}" ${cat.id === club.categoryId ? 'selected' : ''}>${esc(cat.name)}</option>`).join('')}</select></label>
         <div class="admin-form-grid"><label>Канал<input class="input" data-club-field="channel" value="${esc(club.channel || '')}"></label><label>Контакты<input class="input" data-club-field="contacts" value="${esc(club.contacts || '')}"></label></div>
         <button class="btn btn-blue" data-club-save="${club.id}" type="button">Сохранить изменения</button>
+        <div class="club-manage-actions">
+          <button class="action-secondary" data-club-photos="${club.id}" type="button">Фото клуба</button>
+          <button class="action-danger" data-club-delete="${club.id}" type="button">Удалить клуб</button>
+        </div>
       </article>`).join('');
+      list.querySelectorAll('[data-club-photos]').forEach(button => button.addEventListener('click', async () => {
+        button.disabled = true;
+        try {
+          const club = await api('/clubs/' + button.dataset.clubPhotos);
+          const images = Array.isArray(club.images) ? club.images.filter(src => typeof src === 'string' && src.trim()) : [];
+          if (!images.length) { toast('У клуба нет фотографий'); return; }
+          openPhotoViewer(images);
+        } catch (e) { toast(e.message); }
+        finally { button.disabled = false; }
+      }));
+      list.querySelectorAll('[data-club-delete]').forEach(button => button.addEventListener('click', async () => {
+        const card = button.closest('[data-club-card]');
+        const name = card ? card.querySelector('b')?.textContent : '';
+        if (!confirm(`Удалить клуб «${name}»? Он исчезнет из каталога (запись останется в базе).`)) return;
+        button.disabled = true;
+        try {
+          await api('/admin/clubs/' + button.dataset.clubDelete, { method: 'DELETE' });
+          toast('Клуб удалён из каталога');
+          await renderPage();
+          showTab('clubs');
+        } catch (e) { toast(e.message); button.disabled = false; }
+      }));
       list.querySelectorAll('[data-club-save]').forEach(button => button.addEventListener('click', async () => {
         const card = button.closest('[data-club-card]');
         const payload = {};
@@ -491,6 +544,43 @@
         <div class="mod-meta">Получателей: ${(task.recipients || []).length} · Отправлено: ${task.sent || 0} · Ошибок: ${task.failed || 0}</div>
       </article>`).join('') || '<div class="empty-state">Рассылок пока нет.</div>';
     }
+
+  
+
+    
+    let pvImages = [];
+    let pvIndex = 0;
+    function showPvImage() {
+      document.getElementById('pv-img').src = pvImages[pvIndex];
+      document.getElementById('pv-counter').textContent = (pvIndex + 1) + ' / ' + pvImages.length;
+      const single = pvImages.length < 2;
+      document.getElementById('pv-prev').style.visibility = single ? 'hidden' : 'visible';
+      document.getElementById('pv-next').style.visibility = single ? 'hidden' : 'visible';
+    }
+    function openPhotoViewer(images, startIndex = 0) {
+      pvImages = (Array.isArray(images) ? images : []).filter(Boolean);
+      if (!pvImages.length) { toast('Изображений нет'); return; }
+      pvIndex = Math.min(Math.max(0, startIndex), pvImages.length - 1);
+      document.getElementById('photo-viewer').hidden = false;
+      document.body.style.overflow = 'hidden';
+      showPvImage();
+    }
+    function closePhotoViewer() {
+      document.getElementById('photo-viewer').hidden = true;
+      document.getElementById('pv-img').src = '';
+      document.body.style.overflow = '';
+    }
+    document.getElementById('pv-prev').addEventListener('click', () => { pvIndex = (pvIndex - 1 + pvImages.length) % pvImages.length; showPvImage(); });
+    document.getElementById('pv-next').addEventListener('click', () => { pvIndex = (pvIndex + 1) % pvImages.length; showPvImage(); });
+    document.getElementById('pv-close').addEventListener('click', closePhotoViewer);
+    document.getElementById('photo-viewer').addEventListener('click', (e) => { if (e.target.id === 'photo-viewer') closePhotoViewer(); });
+    document.addEventListener('keydown', (e) => {
+      const viewer = document.getElementById('photo-viewer');
+      if (viewer.hidden) return;
+      if (e.key === 'Escape') closePhotoViewer();
+      if (e.key === 'ArrowLeft') document.getElementById('pv-prev').click();
+      if (e.key === 'ArrowRight') document.getElementById('pv-next').click();
+    });
 
     async function renderPage() {
       adminData = await api('/admin/overview');

@@ -3,30 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <!-- шрифт Manrope, тянем с гугл-фонтс -->
+ 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <title>О проекте — HSE clubs NN</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="css/style.css?v=sqlite-users-contacts-20261016">
+  <link rel="stylesheet" href="css/style.css?v=fixes-20261021c">
 </head>
 <body>
 
   <div id="app">
-    <!-- шапка -->
+  
     <div class="page-header">
       <a class="back-btn" href="profile.html"><span class="back-ico"></span></a>
       <div class="title">О проекте</div>
     </div>
 
-    <!-- большая иконка приложения (логотип из папки icons) -->
+    
     <div class="about-hero">
       <img class="app-logo" src="icons/image%201.svg" alt="Логотип ВШЭ" onerror="this.onerror=null;this.src='icons/НИУВШЭ.png';">
       <div class="name">HSE clubs NN</div>
     </div>
 
-    <!-- что такое Mini App -->
+
     <div class="section">
       <div class="section-label" style="margin-bottom:8px">О Mini App</div>
       <div class="plain-text">
@@ -42,13 +42,13 @@
       </div>
     </div>
 
-    <!-- цель проекта, цитата в синей рамочке как в макете -->
+   
     <div class="section">
       <div class="section-label" style="margin-bottom:10px">Цель проекта</div>
       <div class="quote-card">«Сделать внеучебную жизнь Вышки доступной и понятной для каждого студента»</div>
     </div>
 
-    <!-- история проекта с раскрывающимся полным текстом -->
+   
     <div class="section">
       <div class="section-label" style="margin-bottom:8px">Немного истории)))</div>
       <div class="plain-text">
@@ -64,7 +64,7 @@
       </div>
     </div>
 
-    <!-- ссылки -->
+  
     <div class="section">
       <div class="section-label" style="margin-bottom:12px">Полезные ссылки</div>
       <div class="links-list" id="site-links-about"><div class="empty-state">Загрузка ссылок...</div></div>
@@ -76,13 +76,13 @@
     </div>
   </div>
 
-  <script src="js/common.js?v=sqlite-users-contacts-20261016"></script>
+  <script src="js/common.js?v=fixes-20261021c"></script>
   <script>
-    // ============ о проекте ============
+  
     document.querySelector('.back-ico').innerHTML = I.back;
     document.querySelectorAll('.chev').forEach((el) => el.innerHTML = I.chev);
 
-    // Кнопки «Читать далее» раскрывают полный текст соответствующего блока.
+    // Читать далее
     document.querySelectorAll('.read-more').forEach((button) => {
       button.addEventListener('click', () => {
         const target = document.getElementById(button.dataset.target);

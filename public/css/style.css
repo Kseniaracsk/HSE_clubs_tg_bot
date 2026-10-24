@@ -295,6 +295,19 @@ button {
   border-radius: 12px;
   background: var(--blue-soft);
   flex-shrink: 0;
+  overflow: hidden;
+}
+
+.club-row .logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.club-row .logo .logo-letter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--blue);
 }
 
 .club-row .info { flex: 1; min-width: 0; }
@@ -1132,6 +1145,11 @@ img.ava {
   gap: 12px;
 }
 
+/* display выше перебивает атрибут hidden — без этого блока
+   «У вас пока нет заявок» не прячется при переключении таба */
+#my-submissions[hidden],
+#archive-submissions[hidden] { display: none; }
+
 .history-card {
   background: var(--card);
   border-radius: var(--r-card);
@@ -1706,3 +1724,129 @@ img.ava {
 .content-check { display: flex !important; align-items: center; gap: 8px; }
 .content-check input { width: 17px; height: 17px; accent-color: var(--blue); }
 .content-setting-card .btn, .content-add-form .btn { width: 100%; margin-top: 12px; }
+
+/* ===== правки UI 2026-10-17 ===== */
+
+/* лого клуба в маленькой карточке на главной */
+.club-mini .logo img { width: 100%; height: 100%; object-fit: cover; border-radius: 12px; display: block; }
+
+/* ссылки внутри текста: обычный вид, но кликабельные */
+.inline-link { color: inherit; text-decoration: none; }
+.inline-link:hover { text-decoration: underline; }
+
+/* развёрнутая заявка в профиле */
+.submission-details { margin: 8px 0 4px; padding: 10px; display: grid; gap: 4px; font-size: 13px; line-height: 1.45; color: var(--muted); background: var(--blue-soft); border-radius: 10px; }
+.submission-row { overflow-wrap: anywhere; }
+.submission-row b { color: var(--text); }
+.submission-photos { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.submission-photos img { width: 72px; height: 72px; object-fit: cover; border-radius: 8px; display: block; }
+.mod-card .submission-photos img { cursor: pointer; }
+
+/* мнимые стрелки карусели фото на странице клуба */
+.carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  background: none;
+  border: 0;
+  padding: 10px 8px;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 36px;
+  line-height: 1;
+  font-family: inherit;
+  cursor: pointer;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+  user-select: none;
+}
+.carousel-arrow:hover { color: #fff; }
+.carousel-arrow.prev { left: 2px; }
+.carousel-arrow.next { right: 2px; }
+
+/* плавная подгрузка фото в карусели */
+.cover-photo { transition: opacity 0.25s ease; }
+.cover-photo.is-loading { opacity: 0.55; }
+
+/* обложка: фото целиком поверх своей размытой копии — квадратные логотипы не обрезаются */
+.club-hero-art .cover-photo-main { object-fit: contain; }
+.cover-photo-blur { object-fit: cover; filter: blur(16px) brightness(0.72); transform: scale(1.14); }
+
+/* ===== карусель заявок в профиле и просмотрщик фото в админке (2026-10-17) ===== */
+
+/* карусель заявок: одна карточка поверх остальных, переключение мнимыми стрелками */
+.submissions-carousel { position: relative; }
+.submissions-track { display: grid; }
+.submissions-track .history-card { grid-area: 1 / 1; margin-bottom: 0; min-width: 0; }
+/* стрелки на белом фоне: синие, без тени */
+.submissions-carousel .carousel-arrow { color: rgba(36, 56, 184, 0.45); text-shadow: none; }
+.submissions-carousel .carousel-arrow:hover { color: var(--blue); }
+.submissions-counter { margin-top: 8px; text-align: center; color: var(--muted); font-size: 12px; font-weight: 700; }
+
+/* вкладки «Активные» / «Отклонённые и удалённые» в профиле */
+.sub-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.sub-tab {
+  flex: 1;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.sub-tab.on { background: var(--blue); border-color: var(--blue); color: #fff; }
+.sub-tab span { font-weight: 700; opacity: 0.85; }
+.archive-card { opacity: 0.85; }
+
+/* кнопки «Фото клуба» / «Удалить клуб» */
+.club-manage-actions { display: flex; gap: 8px; margin-top: 8px; }
+.club-manage-actions .action-secondary,
+.club-manage-actions .action-danger { flex: 1; }
+
+/* полноэкранный просмотрщик фото в админке */
+.photo-viewer {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 17, 34, 0.93);
+  padding: 20px;
+}
+/* display:flex перебивает hidden из браузерных стилей — возвращаем скрытие явно */
+.photo-viewer[hidden] { display: none; }
+.photo-viewer img {
+  max-width: 100%;
+  max-height: 82vh;
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
+}
+.photo-viewer-close {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  z-index: 2;
+  background: none;
+  border: 0;
+  padding: 8px;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 36px;
+  line-height: 1;
+  font-family: inherit;
+  cursor: pointer;
+  user-select: none;
+}
+.photo-viewer-close:hover { color: #fff; }
+.photo-viewer-counter {
+  position: absolute;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 13px;
+  font-weight: 700;
+}

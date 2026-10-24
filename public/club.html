@@ -8,12 +8,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <title>Клуб — HSE clubs NN</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="css/style.css?v=hse-full-update-20261013">
+  <link rel="stylesheet" href="css/style.css?v=fixes-20261021c">
 </head>
 <body>
   <div id="app" style="padding-bottom:90px">
     <div class="club-hero">
       <div id="club-hero-art" class="club-hero-art" aria-hidden="true"></div>
+      <div id="club-hero-arrows"></div>
       <a class="back-btn" href="catalog.html" aria-label="Назад" style="position:absolute;top:14px;left:14px;z-index:3"><span class="back-ico"></span></a>
       <span id="hero-star"></span>
       <div class="dots" id="club-dots"><i class="on"></i></div>
@@ -26,12 +27,54 @@
     </div>
   </div>
 
-  <script src="js/common.js?v=hse-full-update-20261013"></script>
+  <script src="js/common.js?v=fixes-20261021c"></script>
   <script>
     document.querySelector('.back-ico').innerHTML = I.back;
     const clubId = Number(new URLSearchParams(location.search).get('id'));
     let club = null;
     let clubEvents = [];
+    let heroImages = [];
+    let heroIndex = 0;
+
+    // URL в тексте -> кликабельные ссылки в виде обычного текста (текст уже экранирован esc()).
+    function linkify(escapedText) {
+      return String(escapedText || '').replace(/(https?:\/\/[^\s<"'`)]+|(?:t\.me|telegram\.me)\/[A-Za-z0-9_]{3,})/gi, (match) => {
+        const href = /^https?:\/\//i.test(match) ? match : 'https://' + match;
+        return `<a class="inline-link" href="${href}" target="_blank" rel="noopener">${match}</a>`;
+      });
+    }
+
+    // Переключение фото карусели (по «мнимым» стрелкам по бокам обложки).
+    function showHeroImage(index) {
+      if (!heroImages.length) return;
+      const img = document.getElementById('hero-photo');
+      if (!img) return;
+      heroIndex = (index + heroImages.length) % heroImages.length;
+      img.classList.add('is-loading');
+      delete img.dataset.triedFallback;
+      img.src = heroImages[heroIndex];
+      const blurImg = document.getElementById('hero-photo-blur');
+      if (blurImg) blurImg.src = heroImages[heroIndex];
+      img.addEventListener('load', () => img.classList.remove('is-loading'), { once: true });
+      document.querySelectorAll('#club-dots i').forEach((dot, i) => dot.classList.toggle('on', i === heroIndex));
+    }
+
+    // Если прямая ссылка lh3 не открылась — пробуем запасной формат от Drive.
+    function heroFallbackUrl(url) {
+      const match = String(url || '').match(/googleusercontent\.com\/d\/([A-Za-z0-9_-]+)/);
+      return match ? `https://drive.google.com/thumbnail?id=${match[1]}&sz=w1200` : '';
+    }
+
+    function attachHeroErrorHandler(img) {
+      img.addEventListener('error', () => {
+        const src = heroImages[heroIndex] || '';
+        const fallback = heroFallbackUrl(src);
+        if (fallback && img.dataset.failedSrc !== src) {
+          img.dataset.failedSrc = src;
+          img.src = fallback;
+        }
+      });
+    }
 
     function externalUrl(value) {
       const raw = String(value || '').trim();
@@ -70,16 +113,33 @@
       const categoryId = Math.min(6, Math.max(1, Number(club.categoryId) || 1));
       const categorySymbols = { 1: '📣', 2: '🎨', 3: '🌍', 4: '⚽', 5: '💡', 6: '📢' };
       const images = Array.isArray(club.images) ? club.images.filter(src => typeof src === 'string' && src.trim()) : [];
+      heroImages = images;
+      heroIndex = 0;
       const photo = images[0] || '';
       document.getElementById('club-hero-art').innerHTML = photo
-        ? `<img class="cover-photo" src="${esc(photo)}" alt="Обложка клуба">`
+        ? `<img class="cover-photo cover-photo-blur" id="hero-photo-blur" src="${esc(photo)}" alt="" aria-hidden="true">
+           <img class="cover-photo cover-photo-main" id="hero-photo" src="${esc(photo)}" alt="${esc(club.name || 'Фото клуба')}">`
         : `<div class="cover-art detail-cover-art theme-${categoryId}"><span class="cover-kicker">HSE CLUBS NN</span><span class="cover-symbol">${categorySymbols[categoryId] || '★'}</span><span class="cover-caption">${esc(club.name || 'Студенческий клуб')}</span></div>`;
+      document.getElementById('club-hero-arrows').innerHTML = images.length > 1
+        ? `<button class="carousel-arrow prev" id="hero-prev" type="button" aria-label="Предыдущее фото">&lsaquo;</button><button class="carousel-arrow next" id="hero-next" type="button" aria-label="Следующее фото">&rsaquo;</button>`
+        : '';
       document.getElementById('club-dots').innerHTML = (images.length > 1 ? images : [null]).map((_, i) => `<i class="${i === 0 ? 'on' : ''}"></i>`).join('');
+      const prevArrow = document.getElementById('hero-prev');
+      const nextArrow = document.getElementById('hero-next');
+      if (prevArrow) prevArrow.addEventListener('click', () => showHeroImage(heroIndex - 1));
+      if (nextArrow) nextArrow.addEventListener('click', () => showHeroImage(heroIndex + 1));
+      const heroImg = document.getElementById('hero-photo');
+      if (heroImg) {
+        attachHeroErrorHandler(heroImg);
+        images.forEach(src => { const preload = new Image(); preload.src = src; }); // греем кэш, чтобы листалось мгновенно
+      }
       document.getElementById('hero-star').innerHTML = starBtn(club.id);
 
       const description = [club.history, club.description || club.short].map(value => String(value || '').trim()).filter(Boolean).filter((value, index, all) => all.indexOf(value) === index).join('\n\n') || 'Подробное описание клуба пока не добавлено в базу данных.';
       const shortDescription = description.length > 260 ? description.slice(0, 260).trimEnd() + '…' : description;
       const chairman = club.chairman || {};
+      const hasChairman = Boolean(String(chairman.name || '').trim() || String(chairman.tg || '').trim());
+      const hasContacts = Boolean(String(club.contacts || '').trim());
       const channelUrl = externalUrl(club.channel);
       const contactUrl = externalUrl(club.contacts);
       const howToJoin = Array.isArray(club.howToJoin) ? club.howToJoin : [];
@@ -109,8 +169,8 @@
 
         <section class="detail-section">
           <div class="section-label">История и описание</div>
-          <div class="history-text" id="club-description-short">${esc(shortDescription)}</div>
-          ${description.length > 260 ? `<div class="history-text" id="club-description-full" hidden>${esc(description)}</div><div class="about-more-row"><button class="link-caps read-more" id="club-description-toggle" type="button" aria-expanded="false">Читать далее ›</button></div>` : ''}
+          <div class="history-text" id="club-description-short">${linkify(esc(shortDescription))}</div>
+          ${description.length > 260 ? `<div class="history-text" id="club-description-full" hidden>${linkify(esc(description))}</div><div class="about-more-row"><button class="link-caps read-more" id="club-description-toggle" type="button" aria-expanded="false">Читать далее ›</button></div>` : ''}
         </section>
         ${additionalInfo.length ? `<section class="detail-section"><div class="section-label">О клубе</div>${additionalInfo.map(([label, value]) => `<div class="club-db-info"><b>${esc(label)}</b><p>${esc(value)}</p></div>`).join('')}</section>` : ''}
         ${materials.length ? `<section class="detail-section"><div class="section-label">Фотографии и материалы</div><div class="club-material-links">${materials.map(item => `<a class="club-material-link" href="${esc(externalUrl(item.url))}" target="_blank" rel="noopener"><span>${I.share}</span><span>${esc(item.caption || 'Открыть материалы клуба')}</span><span class="chev">${I.chev}</span></a>`).join('')}</div></section>` : ''}
@@ -134,15 +194,17 @@
             <div class="sched-row"><span class="k">Место:</span><span class="v dark">${esc(item.place || 'Уточняется')}</span></div>`).join('') : club.scheduleText ? `<div class="sched-row schedule-free-text">${esc(club.scheduleText)}</div>` : '<div class="sched-row">Расписание уточняется у организаторов.</div>'}</div>
         </section>
 
+        ${hasChairman || hasContacts ? `
         <section class="detail-section" id="club-contact-info">
           <div class="section-label">Контакты</div>
+          ${hasChairman ? `
           <div class="chair-card">
-            <img class="ava" src="icons/ava.png" alt="Председатель клуба">
-            <div class="info"><div class="name">${esc(chairman.name || 'Представитель клуба')}</div><div class="sub">${esc(chairman.info || club.contacts || 'Контактная информация уточняется')}</div></div>
+            <img class="ava" src="icons/ava.png" alt="Представитель клуба">
+            <div class="info"><div class="name">${esc(chairman.name || 'Представитель клуба')}</div><div class="sub">${linkify(esc(chairman.info || club.contacts || 'Контактная информация уточняется'))}</div></div>
             ${chairman.tg ? `<a class="tg-round" href="https://t.me/${esc(String(chairman.tg).replace(/^@/, ''))}" target="_blank" rel="noopener" aria-label="Написать в Telegram">${I.tg}</a>` : ''}
-          </div>
-          <div class="contact-text">${esc(club.contacts || 'Контакты клуба уточняются.')}</div>
-        </section>
+          </div>` : ''}
+          ${hasContacts ? `<div class="contact-text">${linkify(esc(club.contacts))}</div>` : ''}
+        </section>` : ''}
 
         <div class="club-footer-links">
           <button class="link-caps" id="share-club" style="color:var(--muted);display:flex;align-items:center;gap:6px">${I.share} ПОДЕЛИТЬСЯ КЛУБОМ</button>

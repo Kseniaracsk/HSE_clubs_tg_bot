@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <title>Категория — HSE clubs NN</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="css/style.css?v=hse-full-update-20261013">
+  <link rel="stylesheet" href="css/style.css?v=fixes-20261021c">
 </head>
 <!-- подсвечиваем Каталог, потому что эта страница из каталога -->
 <body data-page="catalog">
@@ -55,7 +55,7 @@
     </button>
   </nav>
 
-  <script src="js/common.js?v=hse-full-update-20261013"></script>
+  <script src="js/common.js?v=fixes-20261021c"></script>
   <script>
     // ============ страница одной категории ============
     // открывается так: category.html?id=1
@@ -86,15 +86,22 @@
       btn.textContent = subbed ? 'Вы подписаны на категорию' : 'Подписаться на категорию';
 
       // клубы этой категории
-      document.getElementById('club-list').innerHTML = clubs.map((c) => `
+      // логотип: первая фото клуба, если нет — первая буква названия на синем фоне
+      document.getElementById('club-list').innerHTML = clubs.map((c) => {
+        const logoSrc = (Array.isArray(c.images) ? c.images.find((src) => typeof src === 'string' && src.trim()) : '') || '';
+        const logoHtml = logoSrc
+          ? `<img src="${esc(logoSrc)}" alt="" loading="lazy">`
+          : `<span class="logo-letter">${esc((c.name || '?').trim().charAt(0).toUpperCase())}</span>`;
+        return `
         <a class="club-row" href="club.html?id=${c.id}">
-          <div class="logo"></div>
+          <div class="logo">${logoHtml}</div>
           <div class="info">
             <div class="name">${esc(c.name)}</div>
             <div class="sub">${esc(c.short || 'Краткое описание клуба')}</div>
           </div>
           <span class="chev">${I.chev}</span>
-        </a>`).join('');
+        </a>`;
+      }).join('');
     }
 
     // кнопка подписаться/отписаться на категорию

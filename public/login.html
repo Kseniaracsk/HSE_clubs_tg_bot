@@ -11,7 +11,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/style.css?v=sqlite-users-contacts-20261016">
+  <link rel="stylesheet" href="css/style.css?v=fixes-20261021c">
 </head>
 <!-- у этой страницы нет data-page, потому что меню снизу тут не показывается -->
 <body>
@@ -46,7 +46,7 @@
     </div>
   </div>
 
-  <script src="js/common.js?v=sqlite-users-contacts-20261016"></script>
+  <script src="js/common.js?v=fixes-20261021c"></script>
   <script>
     // Страница входа: обычный вход и отдельная активация роли администратора.
     const user = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
@@ -76,7 +76,7 @@
         loginUsername.textContent = result.user.username ? '@' + result.user.username : 'Telegram';
       }
       localStorage.setItem('hse_user', '1');
-      haptic('success');
+      notify('success');
       location.href = destination;
     }
 

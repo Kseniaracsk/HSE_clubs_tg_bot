@@ -8,7 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <title>Предложить — HSE clubs NN</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="css/style.css?v=sqlite-users-contacts-20261016">
+  <link rel="stylesheet" href="css/style.css?v=fixes-20261021c">
 </head>
 <body>
   <div id="app" style="padding-bottom:30px">
@@ -24,12 +24,11 @@
 
     <div class="section" id="form-area" style="display:none">
       <div id="form-fields"></div>
-      <button class="btn btn-orange" id="f-save">Сохранить черновик</button>
       <button class="btn btn-orange" id="f-send">Отправить на модерацию</button>
     </div>
   </div>
 
-  <script src="js/common.js?v=sqlite-users-contacts-20261016"></script>
+  <script src="js/common.js?v=fixes-20261021c"></script>
   <script>
     document.querySelector('.back-ico').innerHTML = I.back;
 
@@ -42,7 +41,7 @@
 
     const eventFields = [
       ['title', 'Название события'],
-      ['clubName', 'Название клуба или организатора'],
+      ['clubName', 'Название клуба или организатора', 'club'],
       ['description', 'Описание', 'textarea'],
       ['date', 'Дата', 'date'],
       ['time', 'Время', 'time'],
@@ -152,9 +151,19 @@
         if (field.type !== 'file') data[field.id.replace('f-', '')] = field.value.trim();
       });
 
+      // в форме события «clubName» — это селект: храним и id клуба (для связи
+      // с карточкой в админке), и само название (для читаемости заявки)
+      if (data.clubName !== undefined) {
+        const club = clubs.find((c) => String(c.id) === data.clubName);
+        data.clubId = data.clubName;
+        data.clubName = club ? club.name : data.clubName;
+      }
+
       const files = fieldsBox.querySelectorAll('input[type="file"]');
       data.images = [];
       for (const input of files) {
+        // файлы из поля «Логотип» помечаем: в папке клуба он станет «Название(значок)»
+        const isLogo = input.id === 'f-logo' || input.id === 'logo';
         for (const file of input.files) {
           if (file.size > 5 * 1024 * 1024) {
             throw new Error('Размер изображения не должен превышать 5 МБ');
@@ -162,6 +171,7 @@
           data.images.push({
             name: file.name,
             type: file.type,
+            logo: isLogo,
             data: await new Promise(resolve => {
               const reader = new FileReader();
               reader.onload = () => resolve(reader.result);
@@ -237,7 +247,6 @@
     });
 
     document.getElementById('f-send').addEventListener('click', () => sendForm(false));
-    document.getElementById('f-save').addEventListener('click', () => sendForm(true));
 
     Promise.all([api('/clubs'), api('/categories')]).then(async result => {
       clubs = result[0];
@@ -257,7 +266,10 @@
         try { oldData = JSON.parse(item.details || '{}'); } catch (e) {}
         Object.keys(oldData).forEach(key => {
           const field = document.getElementById('f-' + key);
-          if (field && field.type !== 'file') field.value = oldData[key];
+          if (!field || field.type === 'file') return;
+          // селект клуба хранит id, а в заявке сохранено ещё и название
+          if (key === 'clubName' && oldData.clubId) field.value = oldData.clubId;
+          else field.value = oldData[key];
         });
       } else if (types.some(t => t.key === queryType)) {
         selected = queryType;
